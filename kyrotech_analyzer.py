@@ -64,7 +64,10 @@ class KyrotechAnalyzer:
         return dict(salvage_counts)
 
     def calculate_character_requirements(
-        self, gear_levels: List[GearTier], current_tier: int
+        self,
+        gear_levels: List[GearTier],
+        current_tier: int,
+        equipped_gear: List[str] = None,
     ) -> Dict[str, int]:
         """
         Count kyrotech salvage requirements from current gear tier to max.
@@ -72,17 +75,28 @@ class KyrotechAnalyzer:
         Args:
             gear_levels: List of gear tier requirements
             current_tier: Player's current gear tier for this character
+            equipped_gear: List of gear base_ids that are already obtained (optional)
 
         Returns:
             Dictionary mapping kyrotech salvage base_id to total amount needed
         """
         total_salvage = defaultdict(int)
+        equipped_counts = defaultdict(int)
+        if equipped_gear:
+            for gear_id in equipped_gear:
+                equipped_counts[gear_id] += 1
 
         for gear_tier in gear_levels:
-            if not self._should_count_tier(gear_tier.tier, current_tier):
+            if gear_tier.tier < current_tier or gear_tier.tier > MAX_GEAR_TIER:
                 continue
 
+            gear_seen = defaultdict(int)
             for gear_id in gear_tier.gear:
+                if gear_tier.tier == current_tier:
+                    gear_seen[gear_id] += 1
+                    if gear_seen[gear_id] <= equipped_counts.get(gear_id, 0):
+                        continue
+
                 salvage_reqs = self.calculate_salvage_requirements(gear_id)
                 self._accumulate_salvage(total_salvage, salvage_reqs)
 
@@ -191,8 +205,11 @@ class RosterAnalyzer:
             return None
 
         unit_info = units_by_id[base_id]
+        equipped_gear = [
+            slot.base_id for slot in player_unit.data.gear if slot.is_obtained
+        ]
         kyrotech_needs = self.kyrotech_analyzer.calculate_character_requirements(
-            unit_info.gear_levels, current_gear
+            unit_info.gear_levels, current_gear, equipped_gear
         )
 
         if not kyrotech_needs:
