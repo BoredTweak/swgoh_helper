@@ -209,5 +209,9 @@ __marimo__/
 # Environment variables
 .env
 
-# Cache directory
-data/
+# data files unless it's rote_platoon_requirements.json
+data/*
+!data/rote_platoon_requirements.json
+
+# VS Code settings
+.vscode/

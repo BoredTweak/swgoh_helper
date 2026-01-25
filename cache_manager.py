@@ -14,39 +14,15 @@ class CacheManager:
     """
 
     def __init__(self, cache_dir: str = "data", cache_duration_hours: int = 1):
-        """
-        Initialize the cache manager.
-
-        Args:
-            cache_dir: Directory path for cache storage
-            cache_duration_hours: How long cache entries remain valid (in hours)
-        """
         self.cache_dir = Path(cache_dir)
         self.cache_duration = timedelta(hours=cache_duration_hours)
         self.cache_dir.mkdir(exist_ok=True)
 
     def _get_cache_path(self, cache_key: str) -> Path:
-        """
-        Get the file path for a cache key.
-
-        Args:
-            cache_key: Unique identifier for the cached data
-
-        Returns:
-            Path object pointing to the cache file
-        """
         return self.cache_dir / f"{cache_key}.json"
 
     def is_valid(self, cache_key: str) -> bool:
-        """
-        Check if a cache entry exists and is still valid.
-
-        Args:
-            cache_key: Unique identifier for the cached data
-
-        Returns:
-            True if cache exists and is not expired, False otherwise
-        """
+        """Check if a cache entry exists and is still valid."""
         cache_path = self._get_cache_path(cache_key)
 
         if not cache_path.exists():
@@ -59,15 +35,7 @@ class CacheManager:
             return False
 
     def get(self, cache_key: str) -> Optional[dict]:
-        """
-        Retrieve data from cache if valid.
-
-        Args:
-            cache_key: Unique identifier for the cached data
-
-        Returns:
-            Cached data dictionary, or None if cache is invalid/missing
-        """
+        """Retrieve data from cache if valid, otherwise None."""
         if not self.is_valid(cache_key):
             return None
 
@@ -79,13 +47,7 @@ class CacheManager:
             return None
 
     def set(self, cache_key: str, data: Any) -> None:
-        """
-        Store data in cache with current timestamp.
-
-        Args:
-            cache_key: Unique identifier for the cached data
-            data: Data to cache (must be JSON-serializable)
-        """
+        """Store data in cache with current timestamp."""
         cache_path = self._get_cache_path(cache_key)
         cache_data = {"timestamp": datetime.now().isoformat(), "data": data}
 
@@ -93,12 +55,7 @@ class CacheManager:
             json.dump(cache_data, f, indent=2, ensure_ascii=False)
 
     def invalidate(self, cache_key: str) -> None:
-        """
-        Remove a cache entry.
-
-        Args:
-            cache_key: Unique identifier for the cached data
-        """
+        """Remove a cache entry."""
         cache_path = self._get_cache_path(cache_key)
         if cache_path.exists():
             cache_path.unlink()
@@ -109,32 +66,10 @@ class CacheManager:
             cache_file.unlink()
 
     def _load_cache_file(self, cache_path: Path) -> dict:
-        """
-        Load and parse a cache file.
-
-        Args:
-            cache_path: Path to the cache file
-
-        Returns:
-            Parsed cache data dictionary
-
-        Raises:
-            json.JSONDecodeError: If file contains invalid JSON
-            OSError: If file cannot be read
-        """
         with open(cache_path, "r", encoding="utf-8") as f:
             return json.load(f)
 
     def _is_timestamp_valid(self, timestamp: Optional[str]) -> bool:
-        """
-        Check if a timestamp is within the cache duration.
-
-        Args:
-            timestamp: ISO format timestamp string
-
-        Returns:
-            True if timestamp is valid and not expired, False otherwise
-        """
         if not timestamp:
             return False
 

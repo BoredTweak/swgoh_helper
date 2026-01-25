@@ -24,28 +24,13 @@ class KyrotechAnalyzer:
     """
 
     def __init__(self, gear_lookup: Dict[str, GearPiece]):
-        """
-        Initialize the analyzer with gear recipe data.
-
-        Args:
-            gear_lookup: Dictionary mapping gear base_id to GearPiece
-        """
         self.gear_lookup = gear_lookup
         self.kyrotech_salvage_ids = set(KYROTECH_SALVAGE_IDS.keys())
 
     def calculate_salvage_requirements(
         self, gear_id: str, kyrotech_salvage_ids: set = None
     ) -> Dict[str, int]:
-        """
-        Recursively calculate raw salvage requirements for a gear piece.
-
-        Args:
-            gear_id: The base_id of the gear piece
-            kyrotech_salvage_ids: Set of kyrotech salvage base_ids to track
-
-        Returns:
-            Dictionary mapping salvage base_id to total amount needed
-        """
+        """Recursively calculate raw salvage requirements for a gear piece."""
         if kyrotech_salvage_ids is None:
             kyrotech_salvage_ids = self.kyrotech_salvage_ids
 
@@ -69,17 +54,7 @@ class KyrotechAnalyzer:
         current_tier: int,
         equipped_gear: List[str] = None,
     ) -> Dict[str, int]:
-        """
-        Count kyrotech salvage requirements from current gear tier to max.
-
-        Args:
-            gear_levels: List of gear tier requirements
-            current_tier: Player's current gear tier for this character
-            equipped_gear: List of gear base_ids that are already obtained (optional)
-
-        Returns:
-            Dictionary mapping kyrotech salvage base_id to total amount needed
-        """
+        """Count kyrotech salvage needed from current gear tier to max."""
         total_salvage = defaultdict(int)
         equipped_counts = defaultdict(int)
         if equipped_gear:
@@ -103,12 +78,7 @@ class KyrotechAnalyzer:
         return dict(total_salvage)
 
     def _is_salvage_piece(self, gear_piece: GearPiece) -> bool:
-        """Check if a gear piece is a base salvage (no ingredients)."""
         return not gear_piece.ingredients or len(gear_piece.ingredients) == 0
-
-    def _should_count_tier(self, tier: int, current_tier: int) -> bool:
-        """Check if a gear tier should be counted in requirements."""
-        return current_tier < tier <= MAX_GEAR_TIER
 
     def _process_ingredients(
         self,
@@ -116,11 +86,6 @@ class KyrotechAnalyzer:
         salvage_counts: defaultdict,
         kyrotech_salvage_ids: set,
     ) -> None:
-        """
-        Process all ingredients of a gear piece recursively.
-
-        Reduces cyclomatic complexity by extracting ingredient processing logic.
-        """
         for ingredient in gear_piece.ingredients:
             ing_gear_id = ingredient.gear
             ing_amount = ingredient.amount
@@ -139,41 +104,20 @@ class KyrotechAnalyzer:
     def _accumulate_salvage(
         self, total_salvage: defaultdict, salvage_reqs: Dict[str, int]
     ) -> None:
-        """Accumulate salvage requirements into total."""
         for salvage_id, amount in salvage_reqs.items():
             total_salvage[salvage_id] += amount
 
 
 class RosterAnalyzer:
-    """
-    Analyzes a player's roster to identify kyrotech requirements.
-
-    Separates roster analysis logic from data fetching and presentation.
-    """
+    """Analyzes a player's roster to identify kyrotech requirements."""
 
     def __init__(self, kyrotech_analyzer: KyrotechAnalyzer):
-        """
-        Initialize the roster analyzer.
-
-        Args:
-            kyrotech_analyzer: KyrotechAnalyzer instance for calculations
-        """
         self.kyrotech_analyzer = kyrotech_analyzer
 
     def analyze_roster(
         self, player_units: List[PlayerUnit], units_by_id: Dict[str, Unit]
     ) -> List[Tuple[str, int, Dict[str, int], int]]:
-        """
-        Analyze player's roster for kyrotech needs.
-
-        Args:
-            player_units: List of player's units
-            units_by_id: Dictionary mapping unit base_id to Unit data
-
-        Returns:
-            List of tuples: (name, current_gear, kyrotech_needs, total)
-            Sorted by total kyrotech count descending
-        """
+        """Analyze player's roster for kyrotech needs. Returns list sorted by total kyrotech descending."""
         results = []
 
         for player_unit in player_units:
@@ -186,18 +130,6 @@ class RosterAnalyzer:
     def _analyze_character(
         self, player_unit: PlayerUnit, units_by_id: Dict[str, Unit]
     ) -> Tuple[str, int, Dict[str, int], int] | None:
-        """
-        Analyze a single character for kyrotech requirements.
-
-        Extracted method to reduce complexity in analyze_roster.
-
-        Args:
-            player_unit: Player's unit data
-            units_by_id: Dictionary of all unit definitions
-
-        Returns:
-            Tuple of (name, gear_level, kyrotech_needs, total) or None if no needs
-        """
         base_id = player_unit.data.base_id
         current_gear = player_unit.data.gear_level
 
@@ -219,13 +151,4 @@ class RosterAnalyzer:
         return (unit_info.name, current_gear, kyrotech_needs, total_kyrotech)
 
     def build_units_lookup(self, units: List[Unit]) -> Dict[str, Unit]:
-        """
-        Create a lookup dictionary for units by base_id.
-
-        Args:
-            units: List of Unit objects
-
-        Returns:
-            Dictionary mapping base_id to Unit
-        """
         return {unit.base_id: unit for unit in units}
