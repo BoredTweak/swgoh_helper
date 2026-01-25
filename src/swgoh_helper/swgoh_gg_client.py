@@ -3,8 +3,8 @@ import time
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from typing import Dict, Callable, TypeVar, Any, List, Tuple
 
-from models import PlayerResponse, UnitsResponse, GearPiece, GuildResponse
-from cache_manager import CacheManager
+from .models import PlayerResponse, UnitsResponse, GearPiece, GuildResponse
+from .cache_manager import CacheManager
 
 
 T = TypeVar("T")
@@ -105,7 +105,7 @@ class SwgohGGClient:
         data = self._fetch_with_cache(
             cache_key=f"player_{normalized_ally_code}",
             fetch_func=fetch_from_api,
-            cache_message="Loading player data from cache...",
+            cache_message=f"Loading {normalized_ally_code} player data from cache...",
             fetch_message="Fetching player data from API...",
         )
 

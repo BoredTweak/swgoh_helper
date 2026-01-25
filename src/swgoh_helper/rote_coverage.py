@@ -11,8 +11,8 @@ from typing import Dict, List, Optional, Tuple
 from dataclasses import dataclass, field
 from collections import defaultdict
 
-from models import PlayerResponse, Unit, UnitsResponse
-from rote_models import RotePath, SimpleRoteRequirements, UnitRequirement
+from .models import PlayerResponse, Unit, UnitsResponse
+from .rote_models import RotePath, SimpleRoteRequirements, UnitRequirement
 
 
 class RoteConfig:
@@ -286,7 +286,7 @@ class PathEligibilityFilter:
 class RoteRequirementsLoader:
     """Loads ROTE platoon requirements from JSON configuration file."""
 
-    DEFAULT_PATH = Path(__file__).parent / "data" / "rote_platoon_requirements.json"
+    DEFAULT_PATH = Path("data") / "rote_platoon_requirements.json"
 
     @classmethod
     def load(cls, path: Optional[Path] = None) -> SimpleRoteRequirements:

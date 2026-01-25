@@ -9,7 +9,7 @@ from collections import defaultdict
 @pytest.fixture
 def rote_requirements():
     """Load the ROTE platoon requirements JSON."""
-    json_path = Path(__file__).parent / "data" / "rote_platoon_requirements.json"
+    json_path = Path("data") / "rote_platoon_requirements.json"
     with open(json_path, "r", encoding="utf-8") as f:
         return json.load(f)
 

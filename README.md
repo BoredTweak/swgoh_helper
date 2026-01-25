@@ -5,16 +5,22 @@ Tools for analyzing Star Wars Galaxy of Heroes data via the SWGOH.gg API.
 ## Prerequisites
 
 - Python 3.12+
+- [uv](https://docs.astral.sh/uv/)
 - SWGOH.gg API key
 
 ## Setup
 
-1. Install dependencies:
+1. Install uv (if not already installed):
    ```powershell
-   py -3.12 -m pip install -r requirements.txt
+   pip install uv
    ```
 
-2. Create a `.env` file with your API key:
+2. Sync dependencies:
+   ```powershell
+   uv sync
+   ```
+
+3. Create a `.env` file with your API key:
    ```
    SWGOH_API_KEY=your_api_key_here
    ```
@@ -26,12 +32,12 @@ Tools for analyzing Star Wars Galaxy of Heroes data via the SWGOH.gg API.
 Analyze a player's roster for Kyrotech gear requirements (current gear → G13):
 
 ```powershell
-py -3.12 app.py kyrotech <ally_code>
+uv run kyrotech <ally_code>
 ```
 
 Example:
 ```powershell
-py -3.12 app.py kyrotech 123-456-789
+uv run kyrotech 123-456-789
 ```
 
 ### ROTE Platoon Analysis
@@ -39,12 +45,12 @@ py -3.12 app.py kyrotech 123-456-789
 Analyze guild coverage for Rise of the Empire Territory Battle platoon requirements:
 
 ```powershell
-py -3.12 app.py rote_platoon <ally_code>
+uv run rote-platoon <ally_code>
 ```
 
 Optionally limit analysis to a specific phase:
 ```powershell
-py -3.12 app.py rote_platoon 123-456-789 --max-phase 4
+uv run rote-platoon 123-456-789 --max-phase 4
 ```
 
 Valid phases: `1`, `2`, `3`, `3b`, `4`, `4b`, `5`, `5b`, `6`

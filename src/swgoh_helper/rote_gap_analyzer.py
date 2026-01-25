@@ -9,8 +9,8 @@ from dataclasses import dataclass
 from enum import Enum
 from typing import Dict, List
 
-from rote_models import RotePath, SimpleRoteRequirements, UnitRequirement
-from rote_coverage import CoverageMatrix, RoteConfig
+from .rote_models import RotePath, SimpleRoteRequirements, UnitRequirement
+from .rote_coverage import CoverageMatrix, RoteConfig
 
 
 class GapSeverity(Enum):

@@ -8,8 +8,8 @@ and detects cross-planet deployment conflicts.
 from dataclasses import dataclass
 from typing import Dict, List, Tuple
 
-from rote_models import SimpleRoteRequirements
-from rote_coverage import CoverageMatrix
+from .rote_models import SimpleRoteRequirements
+from .rote_coverage import CoverageMatrix
 
 
 @dataclass

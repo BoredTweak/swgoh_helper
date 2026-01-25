@@ -5,7 +5,7 @@ Service layer for analyzing kyrotech gear requirements in SWGOH.
 from typing import Dict, List, Tuple
 from collections import defaultdict
 
-from models import GearTier, GearPiece, Unit, PlayerUnit
+from .models import GearTier, GearPiece, Unit, PlayerUnit
 
 
 # Constants for kyrotech salvage IDs

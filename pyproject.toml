@@ -1,0 +1,19 @@
+[project]
+name = "swgoh-helper"
+version = "0.1.0"
+description = "Tools for analyzing Star Wars Galaxy of Heroes data via the SWGOH.gg API"
+readme = "README.md"
+requires-python = ">=3.12"
+dependencies = [
+    "python-dotenv",
+    "pydantic",
+    "requests",
+]
+
+[project.scripts]
+kyrotech = "swgoh_helper.app:run_kyrotech"
+rote-platoon = "swgoh_helper.app:run_rote_platoon"
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"

@@ -4,15 +4,15 @@ import sys
 import requests
 from typing import Optional
 
-from swgoh_gg_client import SwgohGGClient
-from kyrotech_analyzer import KyrotechAnalyzer, RosterAnalyzer
-from results_presenter import ResultsPresenter
-from rote_coverage import (
+from .swgoh_gg_client import SwgohGGClient
+from .kyrotech_analyzer import KyrotechAnalyzer, RosterAnalyzer
+from .results_presenter import ResultsPresenter
+from .rote_coverage import (
     build_coverage_matrix,
     load_requirements,
     CoverageAnalyzer,
 )
-from rote_models import RotePath
+from .rote_models import RotePath
 
 
 dotenv.load_dotenv()
@@ -127,8 +127,8 @@ class RotePlatoonApp:
             print("\nAnalyzing platoon coverage...")
             analyzer = CoverageAnalyzer(coverage_matrix, requirements)
 
-            from rote_gap_analyzer import GapAnalyzer
-            from rote_bottleneck_analyzer import BottleneckAnalyzer
+            from .rote_gap_analyzer import GapAnalyzer
+            from .rote_bottleneck_analyzer import BottleneckAnalyzer
 
             gap_analyzer = GapAnalyzer(coverage_matrix, requirements)
             bottleneck_analyzer = BottleneckAnalyzer(coverage_matrix, requirements)
@@ -152,8 +152,8 @@ class RotePlatoonApp:
 
     def _filter_requirements_by_phase(self, requirements, max_phase: str):
         """Filter requirements to only include territories up to max_phase."""
-        from rote_coverage import RoteConfig
-        from rote_models import SimpleRoteRequirements
+        from .rote_coverage import RoteConfig
+        from .rote_models import SimpleRoteRequirements
 
         phase_order = ["1", "2", "3", "3b", "4", "4b", "5", "5b", "6"]
 
@@ -181,7 +181,7 @@ class RotePlatoonApp:
         self, analyzer: CoverageAnalyzer, matrix, gap_analyzer, bottleneck_analyzer
     ) -> None:
         """Display complete ROTE platoon analysis results."""
-        from rote_coverage import RoteConfig
+        from .rote_coverage import RoteConfig
         from collections import defaultdict
 
         summary = analyzer.get_coverage_summary_by_territory()
