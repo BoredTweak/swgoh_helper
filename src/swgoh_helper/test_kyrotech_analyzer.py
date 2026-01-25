@@ -3,8 +3,12 @@ Unit tests for kyrotech_analyzer module.
 """
 
 import unittest
-from kyrotech_analyzer import KyrotechAnalyzer, RosterAnalyzer, MAX_GEAR_TIER
-from models import (
+from swgoh_helper.kyrotech_analyzer import (
+    KyrotechAnalyzer,
+    RosterAnalyzer,
+    MAX_GEAR_TIER,
+)
+from swgoh_helper.models import (
     GearPiece,
     GearIngredient,
     GearTier,
