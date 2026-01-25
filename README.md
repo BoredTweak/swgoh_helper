@@ -24,6 +24,12 @@ Tools for analyzing Star Wars Galaxy of Heroes data via the SWGOH.gg API.
    ```
    SWGOH_API_KEY=your_api_key_here
    ```
+NOTE:
+You can obtain an API key by 
+1. Creating an account with https://swgoh.gg/
+1. Under your profile, select manage api applications
+1. Add a new application for this helper. 
+   - This process will take a few days for SWGOH to approve
 
 ## Usage
 
