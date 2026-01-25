@@ -1,101 +1,61 @@
-# SWGOH Kyrotech Analysis Tool
+# SWGOH Helper
 
-This tool analyzes a player's Star Wars Galaxy of Heroes roster and identifies which characters have the highest Kyrotech gear requirements remaining.
+Tools for analyzing Star Wars Galaxy of Heroes data via the SWGOH.gg API.
+
+## Prerequisites
+
+- Python 3.12+
+- SWGOH.gg API key
 
 ## Setup
 
 1. Install dependencies:
    ```powershell
-   py -3.12 -m pip install -r .\requirements.txt
+   py -3.12 -m pip install -r requirements.txt
    ```
 
-2. Create a `.env` file with your SWGOH.gg API key:
+2. Create a `.env` file with your API key:
    ```
    SWGOH_API_KEY=your_api_key_here
    ```
 
-## Caching
-
-The tool automatically caches API responses in the `data/` folder to improve performance and reduce API calls:
-
-- **Units data** (`units.json`): All game characters and their gear requirements
-- **Gear recipes** (`gear.json`): Crafting recipes for all gear pieces
-- **Player data** (`player_<allycode>.json`): Individual player roster data
-
-**Cache behavior:**
-- Cache expires after **1 hour** from initial fetch
-- Expired cache is automatically refreshed on next run
-- First run: "Fetching from API..."
-- Subsequent runs: "Loading from cache..."
-- Cache files are stored in JSON format with timestamps
-
-**Manual cache management:**
-- Delete `data/` folder to force fresh API fetch
-- Useful if you need the most recent player data before cache expires
-
 ## Usage
 
-Run the app with a player's ally code:
+### Kyrotech Analysis
+
+Analyze a player's roster for Kyrotech gear requirements (current gear → G13):
 
 ```powershell
-python app.py <ally_code>
+py -3.12 app.py kyrotech <ally_code>
 ```
 
 Example:
 ```powershell
-python app.py 123-456-789
+py -3.12 app.py kyrotech 123-456-789
 ```
 
-Or without dashes:
+### ROTE Platoon Analysis
+
+Analyze guild coverage for Rise of the Empire Territory Battle platoon requirements:
+
 ```powershell
-python app.py 123456789
+py -3.12 app.py rote_platoon <ally_code>
 ```
 
-## Output
-
-The tool will display:
-1. Character name and current gear level
-2. Total Kyrotech pieces needed
-3. Breakdown by Kyrotech type
-4. Summary statistics
-
-Example output:
-```
-================================================================================
-CHARACTERS WITH HIGHEST KYROTECH REQUIREMENTS
-================================================================================
-
-#1. Commander Ahsoka Tano (Currently G12)
-   Total Kyrotech Pieces: 4
-   Breakdown:
-      - Kyrotech Power Cell Prototype: 2
-      - Kyrotech Shock Prod Prototype: 2
-
-#2. Jedi Knight Luke Skywalker (Currently G11)
-   Total Kyrotech Pieces: 4
-   Breakdown:
-      - Kyrotech Battle Computer Prototype: 2
-      - Kyrotech Shock Prod Prototype: 2
-
-================================================================================
-Total characters needing kyrotech: 50
-Total kyrotech pieces needed: 250
-================================================================================
+Optionally limit analysis to a specific phase:
+```powershell
+py -3.12 app.py rote_platoon 123-456-789 --max-phase 4
 ```
 
-## How It Works
+Valid phases: `1`, `2`, `3`, `3b`, `4`, `4b`, `5`, `5b`, `6`
 
-1. **Loads Game Data**: Fetches from cache or SWGOH.gg API (units and gear recipes)
-2. **Fetches Player Data**: Gets the player's current roster (from cache or API)
-3. **Calculates Requirements**: For each character, calculates Kyrotech needed from current gear to G13
-4. **Ranks Results**: Sorts characters by total Kyrotech count needed
-5. **Displays**: Shows formatted output with rankings and breakdowns
+**Output includes:**
+- Coverage summary by territory (✅ 100%, ⚠️ 80%+, ❌ below 80%)
+- Unfillable platoon slots by relic tier
+- Critical gaps (units with fewer players than slots needed)
+- Limited availability units (only 1-3 players have them)
 
-The caching system ensures fast subsequent runs while keeping data reasonably fresh.
+## Caching
 
-## API Requirements
-
-This tool requires access to the SWGOH.gg API. You need:
-- A valid SWGOH.gg account
-- API access token (obtained from SWGOH.gg)
+API responses are cached in `data/` for 1 hour. Delete the folder to force a refresh.
 - Player ally codes must be synced with SWGOH.gg
