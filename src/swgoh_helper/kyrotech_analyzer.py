@@ -127,6 +127,39 @@ class RosterAnalyzer:
 
         return sorted(results, key=lambda x: x[3], reverse=True)
 
+    def analyze_faction_kyrotech(
+        self, player_units: List[PlayerUnit], units_by_id: Dict[str, Unit], faction: str
+    ) -> List[Tuple[str, int, Dict[str, int], int]]:
+        """Analyze kyrotech needs for all characters in a specific faction.
+
+        Args:
+            player_units: List of player's units
+            units_by_id: Dictionary mapping base_id to Unit info
+            faction: The faction to filter by (e.g., "Empire", "Rebel", "Sith")
+
+        Returns:
+            List of tuples (name, gear_level, kyrotech_needs, total_kyrotech) sorted by total kyrotech descending
+        """
+        faction_results = []
+
+        for player_unit in player_units:
+            base_id = player_unit.data.base_id
+            if base_id not in units_by_id:
+                continue
+
+            unit_info = units_by_id[base_id]
+
+            # Check if unit belongs to the specified faction
+            if faction not in unit_info.categories:
+                continue
+
+            character_result = self._analyze_character(player_unit, units_by_id)
+            if character_result:
+                faction_results.append(character_result)
+
+        # Return all results sorted by total kyrotech descending
+        return sorted(faction_results, key=lambda x: x[3], reverse=True)
+
     def _analyze_character(
         self, player_unit: PlayerUnit, units_by_id: Dict[str, Unit]
     ) -> Tuple[str, int, Dict[str, int], int] | None:
