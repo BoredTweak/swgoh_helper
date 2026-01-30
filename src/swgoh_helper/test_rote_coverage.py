@@ -1,22 +1,17 @@
 """Unit tests for ROTE coverage matrix builder (Phase 3)."""
 
 import pytest
-from pathlib import Path
-from unittest.mock import MagicMock, patch
 
-from rote_coverage import (
+from swgoh_helper.rote_coverage import (
     RoteConfig,
     CoverageMatrixBuilder,
-    CoverageMatrix,
     UnitCoverage,
-    PlayerUnitInfo,
     PathEligibilityFilter,
     RoteRequirementsLoader,
     CoverageAnalyzer,
-    build_coverage_matrix,
 )
-from rote_models import RotePath, UnitRequirement, UnitType
-from models import (
+from swgoh_helper.rote_models import RotePath, UnitRequirement
+from swgoh_helper.models import (
     Unit,
     UnitsResponse,
     PlayerResponse,
@@ -382,7 +377,7 @@ def test_coverage_analyzer_basic(mock_units_response, mock_player_roster):
     )
 
     # Create a simple requirement
-    from rote_models import SimpleRoteRequirements
+    from swgoh_helper.rote_models import SimpleRoteRequirements
 
     requirements = SimpleRoteRequirements(
         version="1.0",
