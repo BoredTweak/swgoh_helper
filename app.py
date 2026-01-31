@@ -5,7 +5,7 @@ import requests
 from typing import Optional
 
 from swgoh_gg_client import SwgohGGClient
-from kyrotech_analyzer import KyrotechAnalyzer, RosterAnalyzer
+from kyrotech_analyzer import KyrotechAnalyzer, RosterAnalyzer, KYROTECH_SALVAGE_IDS
 from results_presenter import ResultsPresenter
 from rote_coverage import (
     build_coverage_matrix,
@@ -39,6 +39,43 @@ class KyrotechAnalysisApp:
             results = roster_analyzer.analyze_roster(player_data.units, units_by_id)
 
             self.presenter.display_results(results)
+
+        except requests.exceptions.RequestException as e:
+            self._handle_request_error(e)
+        except Exception as e:
+            self._handle_general_error(e)
+
+    def find_top_faction_kyrotech(self, ally_code: str, faction: str) -> None:
+        """Find all characters with kyrotech needs for a specific faction.
+
+        Args:
+            ally_code: Player's ally code
+            faction: The faction to filter by (e.g., "Empire", "Rebel", "Sith")
+        """
+        try:
+            units_data, gear_data, player_data = self._fetch_game_data(ally_code)
+
+            kyrotech_analyzer = KyrotechAnalyzer(gear_data)
+            roster_analyzer = RosterAnalyzer(kyrotech_analyzer)
+
+            units_by_id = roster_analyzer.build_units_lookup(units_data.data)
+            results = roster_analyzer.analyze_faction_kyrotech(
+                player_data.units, units_by_id, faction
+            )
+
+            if results:
+                print(f"\n{'='*60}")
+                print(f"{faction} Characters by Kyrotech Needs")
+                print(f"{'='*60}\n")
+
+                for name, gear_level, kyrotech_needs, total_kyrotech in results:
+                    print(f"{name} (G{gear_level}): {total_kyrotech} total kyrotech")
+                    for salvage_id, count in kyrotech_needs.items():
+                        salvage_name = KYROTECH_SALVAGE_IDS.get(salvage_id, salvage_id)
+                        print(f"  • {salvage_name}: {count}")
+                    print()
+            else:
+                print(f"\nNo {faction} characters found that need kyrotech.")
 
         except requests.exceptions.RequestException as e:
             self._handle_request_error(e)
@@ -353,6 +390,10 @@ def print_usage():
     print(
         "  kyrotech <ally_code>      Analyze a player's roster for kyrotech requirements"
     )
+    print("  top_faction <ally_code> <faction>")
+    print(
+        "                            Find character with highest kyrotech needs for a faction"
+    )
     print("  rote_platoon <ally_code> [--max-phase N]")
     print("                            Analyze guild for RotE platoon requirements")
     print("                            --max-phase: Limit analysis to phases up to N")
@@ -360,6 +401,7 @@ def print_usage():
     print()
     print("Examples:")
     print("  python app.py kyrotech 123-456-789")
+    print("  python app.py top_faction 123-456-789 Empire")
     print("  python app.py rote_platoon 123-456-789")
     print("  python app.py rote_platoon 123-456-789 --max-phase 4")
 
@@ -424,6 +466,22 @@ def main():
         ally_code = sys.argv[2]
         app = KyrotechAnalysisApp(SWGOH_API_KEY)
         app.analyze_player(ally_code)
+    elif command == "top_faction":
+        if len(sys.argv) < 4:
+            print("Error: ally_code and faction are required for top_faction command")
+            print("Usage: python app.py top_faction <ally_code> <faction>")
+            print("Example: python app.py top_faction 123-456-789 Empire")
+            sys.exit(1)
+
+        if not SWGOH_API_KEY:
+            print("Error: SWGOH_API_KEY not found in environment variables")
+            print("Please create a .env file with your API key")
+            sys.exit(1)
+
+        ally_code = sys.argv[2]
+        faction = sys.argv[3]
+        app = KyrotechAnalysisApp(SWGOH_API_KEY)
+        app.find_top_faction_kyrotech(ally_code, faction)
     elif command == "rote_platoon":
         if len(sys.argv) < 3:
             print("Error: ally_code is required for rote_platoon command")
