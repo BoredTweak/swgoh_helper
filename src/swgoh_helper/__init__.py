@@ -21,6 +21,13 @@ from .models import (
 
 from .swgoh_gg_client import SwgohGGClient
 
+from .rote_proximity_analyzer import (
+    ProximityAnalyzer,
+    ProgressStage,
+    PlayerProgress,
+    GapProximityReport,
+)
+
 __all__ = [
     # Client
     "SwgohGGClient",
@@ -40,4 +47,9 @@ __all__ = [
     "GACMatchAnalysis",
     "GACBracketResponse",
     "GACHistoryResponse",
+    # ROTE Proximity Analyzer
+    "ProximityAnalyzer",
+    "ProgressStage",
+    "PlayerProgress",
+    "GapProximityReport",
 ]

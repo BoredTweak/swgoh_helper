@@ -325,7 +325,7 @@ class RotePlatoonApp:
                     owners = ", ".join(gap.player_names) if gap.player_names else ""
                     owners_suffix = f" ({owners})" if owners else ""
                     print(
-                        f"  - {gap.unit_name} R{gap.min_relic}: "
+                        f"- {gap.unit_name} R{gap.min_relic}: "
                         f"{gap.players_available}/{gap.slots_needed} players{owners_suffix}"
                     )
 

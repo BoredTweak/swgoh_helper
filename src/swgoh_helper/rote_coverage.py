@@ -76,6 +76,8 @@ class PlayerUnitInfo:
     player_name: str
     ally_code: int
     relic_tier: int  # Actual relic (0-9), not API value
+    gear_level: int = 13  # Gear level 1-13
+    rarity: int = 7  # Star level 1-7
 
 
 @dataclass
@@ -106,6 +108,21 @@ class UnitCoverage:
         result = []
         for relic_level, players in self.players_by_relic.items():
             if relic_level >= min_relic:
+                result.extend(players)
+        return result
+
+    def all_players(self) -> List[PlayerUnitInfo]:
+        """Get all players who have this unit at any level."""
+        result = []
+        for players in self.players_by_relic.values():
+            result.extend(players)
+        return result
+
+    def players_below_relic(self, required_relic: int) -> List[PlayerUnitInfo]:
+        """Get players who have this unit but below the required relic threshold."""
+        result = []
+        for relic_level, players in self.players_by_relic.items():
+            if relic_level < required_relic:
                 result.extend(players)
         return result
 
@@ -143,6 +160,22 @@ class CoverageMatrix:
         if coverage is None:
             return []
         return coverage.players_at_relic(min_relic)
+
+    def get_players_below_relic(
+        self, unit_id: str, required_relic: int
+    ) -> List[PlayerUnitInfo]:
+        """Get players who have a unit but below the required relic level."""
+        coverage = self.units.get(unit_id)
+        if coverage is None:
+            return []
+        return coverage.players_below_relic(required_relic)
+
+    def get_all_players(self, unit_id: str) -> List[PlayerUnitInfo]:
+        """Get all players who have a unit at any level."""
+        coverage = self.units.get(unit_id)
+        if coverage is None:
+            return []
+        return coverage.all_players()
 
     def get_coverage_summary(self, unit_id: str) -> Dict[int, int]:
         """
@@ -203,11 +236,16 @@ class CoverageMatrixBuilder:
                 if unit_data.rarity < 7:
                     continue
                 effective_tier = unit_data.rarity
+                gear_level = 13  # Ships don't have gear level
+                rarity = unit_data.rarity
             else:
                 actual_relic = self._convert_relic_tier(unit_data.relic_tier)
-                if actual_relic is None:
-                    continue
-                effective_tier = actual_relic
+                gear_level = unit_data.gear_level
+                rarity = unit_data.rarity
+
+                # Use -1 for non-reliced characters, enabling proximity analysis
+                # while still allowing existing relic filtering to work
+                effective_tier = actual_relic if actual_relic is not None else -1
 
             if unit_id not in matrix.units:
                 matrix.units[unit_id] = UnitCoverage(
@@ -222,6 +260,8 @@ class CoverageMatrixBuilder:
                 player_name=player_name,
                 ally_code=ally_code,
                 relic_tier=effective_tier,
+                gear_level=gear_level,
+                rarity=rarity,
             )
             matrix.units[unit_id].players_by_relic[effective_tier].append(player_info)
 

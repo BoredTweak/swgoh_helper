@@ -72,7 +72,7 @@ class KyrotechAnalysisApp:
                     print(f"{name} (G{gear_level}): {total_kyrotech} total kyrotech")
                     for salvage_id, count in kyrotech_needs.items():
                         salvage_name = KYROTECH_SALVAGE_IDS.get(salvage_id, salvage_id)
-                        print(f"  • {salvage_name}: {count}")
+                        print(f"  - {salvage_name}: {count}")
                     print()
             else:
                 print(f"\nNo {faction} characters found that need kyrotech.")
@@ -166,12 +166,18 @@ class RotePlatoonApp:
 
             from .rote_gap_analyzer import GapAnalyzer
             from .rote_bottleneck_analyzer import BottleneckAnalyzer
+            from .rote_proximity_analyzer import ProximityAnalyzer
 
             gap_analyzer = GapAnalyzer(coverage_matrix, requirements)
             bottleneck_analyzer = BottleneckAnalyzer(coverage_matrix, requirements)
+            proximity_analyzer = ProximityAnalyzer(coverage_matrix, requirements)
 
             self._display_rote_results(
-                analyzer, coverage_matrix, gap_analyzer, bottleneck_analyzer
+                analyzer,
+                coverage_matrix,
+                gap_analyzer,
+                bottleneck_analyzer,
+                proximity_analyzer,
             )
 
         except ValueError as e:
@@ -215,7 +221,12 @@ class RotePlatoonApp:
         )
 
     def _display_rote_results(
-        self, analyzer: CoverageAnalyzer, matrix, gap_analyzer, bottleneck_analyzer
+        self,
+        analyzer: CoverageAnalyzer,
+        matrix,
+        gap_analyzer,
+        bottleneck_analyzer,
+        proximity_analyzer=None,
     ) -> None:
         """Display complete ROTE platoon analysis results."""
         from .rote_coverage import RoteConfig
@@ -364,7 +375,71 @@ class RotePlatoonApp:
                 )
                 print(f"\n3 owners ({len(three_owners)}):\n  {units_str}")
 
+        # Farming recommendations (closest players to gaps)
+        if proximity_analyzer:
+            self._display_farming_recommendations(proximity_analyzer)
+
         print()
+
+    def _display_farming_recommendations(self, proximity_analyzer) -> None:
+        """Display farming recommendations for platoon gaps."""
+        from .rote_proximity_analyzer import ProgressStage
+
+        recommendations = proximity_analyzer.get_farming_recommendations(
+            max_recommendations=15
+        )
+
+        print(f"\n\nFarming recommendations (closest to gaps)")
+        print("-" * 40)
+
+        if not recommendations:
+            print("\n✅ No actionable farming recommendations!")
+            return
+
+        for unit_name, relic_req, closest_players in recommendations:
+            print(f"\n{unit_name} {relic_req}:")
+
+            # Group players by distance score to handle ties
+            # Show up to 3 distinct distance levels, but include ALL tied players at each level
+            distance_groups: list[list] = []
+            current_group: list = []
+            current_score: float | None = None
+
+            for p in closest_players:
+                if current_score is None or p.distance_score == current_score:
+                    current_group.append(p)
+                    current_score = p.distance_score
+                else:
+                    if current_group:
+                        distance_groups.append(current_group)
+                    current_group = [p]
+                    current_score = p.distance_score
+
+            if current_group:
+                distance_groups.append(current_group)
+
+            # Display up to 3 distance groups
+            groups_to_show = distance_groups[:3]
+
+            for group in groups_to_show:
+                # All players in a group have the same distance, so use first to get label
+                first = group[0]
+
+                if first.stage == ProgressStage.STAR_GATED:
+                    label = f"needs {first.star_gap}★ first"
+                elif first.stage == ProgressStage.GEARING:
+                    label = f"needs G13 (+{first.gear_gap} gear)"
+                elif first.stage == ProgressStage.GEAR_13:
+                    label = "at G13, needs relic"
+                else:  # RELICED
+                    label = f"+{first.relic_gap}R needed"
+
+                # Collect player names
+                names = [p.player_name for p in group]
+                names_str = ", ".join(names)
+                count = len(names)
+
+                print(f"  - {label} ({count}): {names_str}")
 
 
 def print_usage():
