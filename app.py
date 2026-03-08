@@ -285,12 +285,11 @@ class RotePlatoonApp:
                 for gap in sorted(
                     gaps, key=lambda g: (g.players_available, g.unit_name)
                 ):
-                    owners = (
-                        ", ".join(gap.player_names) if gap.player_names else "NO ONE"
-                    )
+                    owners = ", ".join(gap.player_names) if gap.player_names else ""
+                    owners_suffix = f" ({owners})" if owners else ""
                     print(
                         f"  - {gap.unit_name} R{gap.min_relic}: "
-                        f"{gap.players_available}/{gap.slots_needed} players ({owners})"
+                        f"{gap.players_available}/{gap.slots_needed} players{owners_suffix}"
                     )
 
         # Limited availability units
@@ -308,39 +307,25 @@ class RotePlatoonApp:
             three_owners = [u for u in available_rare if u.owner_count == 3]
 
             if sole_owner:
-                print(f"\nOnly 1 player has ({len(sole_owner)} units):")
-                for unit in sole_owner:
-                    territories = ", ".join(unit.territories_needed[:2])
-                    if len(unit.territories_needed) > 2:
-                        territories += f" +{len(unit.territories_needed) - 2}"
-                    print(
-                        f"   - {unit.unit_name} R{unit.min_relic} → {unit.owner_names[0]} "
-                        f"[{territories}]"
-                    )
+                units_str = "\n  ".join(
+                    f"{u.unit_name} R{u.min_relic}→{u.owner_names[0]}"
+                    for u in sole_owner
+                )
+                print(f"\n1 owner ({len(sole_owner)}):\n  {units_str}")
 
             if two_owners:
-                print(f"\nOnly 2 players have ({len(two_owners)} units):")
-                for unit in two_owners:
-                    owners = ", ".join(unit.owner_names[:2])
-                    territories = ", ".join(unit.territories_needed[:2])
-                    if len(unit.territories_needed) > 2:
-                        territories += f" +{len(unit.territories_needed) - 2}"
-                    print(
-                        f"   - {unit.unit_name} R{unit.min_relic} → {owners} "
-                        f"[{territories}]"
-                    )
+                units_str = "\n  ".join(
+                    f"{u.unit_name} R{u.min_relic}→{', '.join(u.owner_names[:2])}"
+                    for u in two_owners
+                )
+                print(f"\n2 owners ({len(two_owners)}):\n  {units_str}")
 
             if three_owners:
-                print(f"\nOnly 3 players have ({len(three_owners)} units):")
-                for unit in three_owners:
-                    owners = ", ".join(unit.owner_names[:3])
-                    territories = ", ".join(unit.territories_needed[:2])
-                    if len(unit.territories_needed) > 2:
-                        territories += f" +{len(unit.territories_needed) - 2}"
-                    print(
-                        f"   - {unit.unit_name} R{unit.min_relic} → {owners} "
-                        f"[{territories}]"
-                    )
+                units_str = "\n  ".join(
+                    f"{u.unit_name} R{u.min_relic}→{', '.join(u.owner_names[:3])}"
+                    for u in three_owners
+                )
+                print(f"\n3 owners ({len(three_owners)}):\n  {units_str}")
 
         print()
 
