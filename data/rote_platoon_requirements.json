@@ -3883,7 +3883,7 @@
       "unit_type": "character"
     },
     {
-      "unit_id": "EXECUTOR",
+      "unit_id": "CAPITALEXECUTOR",
       "unit_name": "Executor",
       "min_relic": 7,
       "path": "neutral",
@@ -4315,7 +4315,7 @@
       "unit_type": "character"
     },
     {
-      "unit_id": "EXECUTOR",
+      "unit_id": "CAPITALEXECUTOR",
       "unit_name": "Executor",
       "min_relic": 7,
       "path": "neutral",
@@ -4711,7 +4711,7 @@
       "unit_type": "character"
     },
     {
-      "unit_id": "EXECUTOR",
+      "unit_id": "CAPITALEXECUTOR",
       "unit_name": "Executor",
       "min_relic": 7,
       "path": "neutral",
@@ -5332,7 +5332,7 @@
       "unit_type": "ship"
     },
     {
-      "unit_id": "EXECUTOR",
+      "unit_id": "CAPITALEXECUTOR",
       "unit_name": "Executor",
       "min_relic": 7,
       "path": "neutral",

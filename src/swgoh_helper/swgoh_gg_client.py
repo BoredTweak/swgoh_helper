@@ -180,6 +180,13 @@ class SwgohGGClient:
 
         return guild_id, guild_name, member_ally_codes
 
+    def invalidate_player_caches(self, ally_codes: List[int]) -> None:
+        """Invalidate cache entries for the specified ally codes."""
+        for ally_code in ally_codes:
+            normalized_code = str(ally_code).replace("-", "")
+            cache_key = f"player_{normalized_code}"
+            self.cache.invalidate(cache_key)
+
     def get_guild_rosters(
         self, ally_codes: List[int], delay_seconds: float = 1.0
     ) -> List[PlayerResponse]:

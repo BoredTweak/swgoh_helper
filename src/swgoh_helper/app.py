@@ -116,7 +116,9 @@ class RotePlatoonApp:
     def __init__(self, api_key: str):
         self.client = SwgohGGClient(api_key)
 
-    def analyze_guild(self, ally_code: str, max_phase: Optional[str] = None) -> None:
+    def analyze_guild(
+        self, ally_code: str, max_phase: Optional[str] = None, refresh: bool = False
+    ) -> None:
         """Fetch guild information and analyze platoon coverage."""
         try:
             guild_id, guild_name, member_ally_codes = (
@@ -128,6 +130,10 @@ class RotePlatoonApp:
             print(f"Guild ID: {guild_id}")
             print(f"Members: {len(member_ally_codes)}")
             print(f"{'='*60}")
+
+            if refresh:
+                print("\nInvalidating player caches (--refresh specified)...")
+                self.client.invalidate_player_caches(member_ally_codes)
 
             print("\nLoading unit metadata...")
             units_data = self.client.get_units()
@@ -450,15 +456,19 @@ def print_usage():
     print(
         "  kyrotech <ally_code>      Analyze a player's roster for kyrotech requirements"
     )
-    print("  rote_platoon <ally_code> [--max-phase N]")
+    print("  rote_platoon <ally_code> [--max-phase N] [--refresh]")
     print("                            Analyze guild for RotE platoon requirements")
     print("                            --max-phase: Limit analysis to phases up to N")
     print("                                         (e.g., 4, 3b, 5)")
+    print(
+        "                            --refresh:   Force fresh data from API (ignore cache)"
+    )
     print()
     print("Examples:")
     print("  python app.py kyrotech 123-456-789")
     print("  python app.py rote_platoon 123-456-789")
     print("  python app.py rote_platoon 123-456-789 --max-phase 4")
+    print("  python app.py rote_platoon 123-456-789 --refresh")
 
 
 def run_kyrotech():
@@ -492,7 +502,7 @@ def run_kyrotech():
 def run_rote_platoon():
     """Entry point for rote-platoon CLI command."""
     if len(sys.argv) < 2:
-        print("Usage: rote-platoon <ally_code> [--max-phase N]")
+        print("Usage: rote-platoon <ally_code> [--max-phase N] [--refresh]")
         sys.exit(1)
 
     if not SWGOH_API_KEY:
@@ -502,13 +512,15 @@ def run_rote_platoon():
 
     ally_code = sys.argv[1]
     max_phase = None
+    refresh = False
     for i, arg in enumerate(sys.argv[2:], start=2):
         if arg == "--max-phase" and i + 1 < len(sys.argv):
             max_phase = sys.argv[i + 1]
-            break
+        elif arg == "--refresh":
+            refresh = True
 
     app = RotePlatoonApp(SWGOH_API_KEY)
-    app.analyze_guild(ally_code, max_phase=max_phase)
+    app.analyze_guild(ally_code, max_phase=max_phase, refresh=refresh)
 
 
 def main():
@@ -536,7 +548,9 @@ def main():
     elif command == "rote_platoon":
         if len(sys.argv) < 3:
             print("Error: ally_code is required for rote_platoon command")
-            print("Usage: python app.py rote_platoon <ally_code> [--max-phase N]")
+            print(
+                "Usage: python app.py rote_platoon <ally_code> [--max-phase N] [--refresh]"
+            )
             sys.exit(1)
 
         if not SWGOH_API_KEY:
@@ -546,13 +560,15 @@ def main():
 
         ally_code = sys.argv[2]
         max_phase = None
+        refresh = False
         for i, arg in enumerate(sys.argv[3:], start=3):
             if arg == "--max-phase" and i + 1 < len(sys.argv):
                 max_phase = sys.argv[i + 1]
-                break
+            elif arg == "--refresh":
+                refresh = True
 
         app = RotePlatoonApp(SWGOH_API_KEY)
-        app.analyze_guild(ally_code, max_phase=max_phase)
+        app.analyze_guild(ally_code, max_phase=max_phase, refresh=refresh)
     else:
         print(f"Unknown command: {command}")
         print()

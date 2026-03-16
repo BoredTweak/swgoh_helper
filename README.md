@@ -70,6 +70,32 @@ Valid phases: `1`, `2`, `3`, `3b`, `4`, `4b`, `5`, `5b`, `6`
 
 See [Farming Recommendations](docs/farming_recommendations.md) for details on how proximity is calculated.
 
+### Bonus Zone Readiness Analysis
+
+Compare guild readiness for Zeffo vs Mandalore bonus zones in Rise of the Empire TB:
+
+```powershell
+uv run pytest test/test_bonus_zone_readiness.py -v -s
+```
+
+**What it analyzes:**
+- Current qualifying player count vs unlock threshold (Zeffo: 30/30, Mandalore: 25/25)
+- "Distance" to qualify for each near-qualifying player using the farming formula:
+  - `distance = (relic_gap × 1.0) + (gear_gap × 0.5) + (star_gap × 2.0)`
+- Total guild farming effort to fill the gap
+- Quick wins (players within distance < 5)
+
+**Mandalore unlock chain (factored into distance calculations):**
+- Bo-Katan (Mand'alor) requires R7: Kelleran Beq, Paz Vizsla, IG-12 & Grogu, Beskar Mando
+- Beskar Mando requires 7★ G12: Mando, Greef Karga, Cara Dune, IG-11, Kuiil
+
+**Output includes:**
+- Officer briefing with priority player lists
+- Comparison summary (which zone is closer to unlock)
+- Quick wins for each zone
+
+See [Bonus Zone Analysis](docs/bonus_zone_analysis.md) for the latest results.
+
 ## Caching
 
 API responses are cached in `data/` for 1 hour. Delete the folder to force a refresh.
