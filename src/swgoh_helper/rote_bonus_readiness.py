@@ -1,5 +1,7 @@
 """
-Ad-hoc test to determine if the guild is closer to unlocking Mandalore or Zeffo bonus zones.
+Bonus Zone Readiness Analyzer for Rise of the Empire Territory Battle.
+
+Determines if the guild is closer to unlocking Mandalore or Zeffo bonus zones.
 
 Zeffo Requirements:
 - Cere Junda AND (Cal Kestis OR Jedi Knight Cal Kestis)
@@ -18,12 +20,12 @@ Distance scoring uses the farming recommendations formula:
 """
 
 import json
+import sys
 from pathlib import Path
 from dataclasses import dataclass
 from typing import Dict, List, Set, Tuple
 
-from swgoh_helper.models import PlayerResponse, UnitsResponse
-from swgoh_helper.rote_coverage import CoverageMatrixBuilder
+from swgoh_helper.models import PlayerResponse
 
 
 # Unit IDs for bonus zone unlock requirements
@@ -176,9 +178,30 @@ def calculate_gear_distance(
     return (gear_gap * GEAR_WEIGHT) + (star_gap * STAR_WEIGHT)
 
 
-def load_guild_data() -> dict:
+def get_data_dir() -> Path:
+    """Get the data directory path."""
+    # Try relative to current working directory first
+    data_dir = Path("data")
+    if data_dir.exists():
+        return data_dir
+
+    # Try relative to the module location
+    module_dir = Path(__file__).parent.parent.parent
+    data_dir = module_dir / "data"
+    if data_dir.exists():
+        return data_dir
+
+    raise FileNotFoundError("Could not find data directory")
+
+
+def load_guild_data(guild_id: str) -> dict:
     """Load guild data from cache."""
-    guild_file = Path("data/guild_p31lCQXZQp6uqKQWHlQyxg.json")
+    data_dir = get_data_dir()
+    guild_file = data_dir / f"guild_{guild_id}.json"
+
+    if not guild_file.exists():
+        raise FileNotFoundError(f"Guild file not found: {guild_file}")
+
     with open(guild_file, "r", encoding="utf-8") as f:
         data = json.load(f)
     return data["data"]["data"]
@@ -191,7 +214,7 @@ def get_current_member_ally_codes(guild_data: dict) -> Set[int]:
 
 def load_player_rosters(member_ally_codes: Set[int]) -> List[PlayerResponse]:
     """Load player rosters for current guild members only."""
-    data_dir = Path("data")
+    data_dir = get_data_dir()
     rosters = []
 
     for player_file in data_dir.glob("player_*.json"):
@@ -204,14 +227,6 @@ def load_player_rosters(member_ally_codes: Set[int]) -> List[PlayerResponse]:
             rosters.append(roster)
 
     return rosters
-
-
-def load_units_data() -> UnitsResponse:
-    """Load units reference data."""
-    units_file = Path("data/units.json")
-    with open(units_file, "r", encoding="utf-8") as f:
-        data = json.load(f)
-    return UnitsResponse(**data)
 
 
 def convert_relic_tier(api_relic_tier: int | None) -> int:
@@ -415,7 +430,6 @@ def analyze_zeffo_readiness(rosters: List[PlayerResponse]) -> BonusZoneReadiness
     """
     qualifying_players = []
     near_qualifying = []
-    total_distance = 0.0
 
     for roster in rosters:
         player_name = roster.data.name
@@ -441,7 +455,7 @@ def analyze_zeffo_readiness(rosters: List[PlayerResponse]) -> BonusZoneReadiness
                         f"Cere R{cere.relic_tier}->R7 (d={cere.distance:.1f})"
                     )
                 else:
-                    details.append(f"Cere OK")
+                    details.append("Cere OK")
             else:
                 details.append("no Cere")
 
@@ -556,7 +570,7 @@ def analyze_mandalore_readiness(rosters: List[PlayerResponse]) -> BonusZoneReadi
                         f"Bo-Katan R{bokatan.relic_tier}->R7 (d={bokatan.distance:.1f})"
                     )
                 else:
-                    details.append(f"Bo-Katan OK")
+                    details.append("Bo-Katan OK")
             else:
                 # Show prereq details
                 if bokatan_prereq and bokatan_prereq.prereq_distance < float("inf"):
@@ -576,7 +590,7 @@ def analyze_mandalore_readiness(rosters: List[PlayerResponse]) -> BonusZoneReadi
                         f"Beskar R{beskar.relic_tier}->R7 (d={beskar.distance:.1f})"
                     )
                 else:
-                    details.append(f"Beskar OK")
+                    details.append("Beskar OK")
             else:
                 # Show prereq details
                 if beskar_prereq and beskar_prereq.prereq_distance < float("inf"):
@@ -661,102 +675,6 @@ def print_readiness_report(readiness: BonusZoneReadiness) -> None:
             print(f"    ... and {len(readiness.near_qualifying) - 15} more players")
 
 
-def test_bonus_zone_readiness():
-    """Main test to compare Zeffo vs Mandalore readiness."""
-    print("\n" + "=" * 60)
-    print("  BONUS ZONE READINESS ANALYSIS")
-    print("  Guild: Alderaanian Tourism Board")
-    print("=" * 60)
-
-    # Load guild data and filter to current members only
-    guild_data = load_guild_data()
-    member_ally_codes = get_current_member_ally_codes(guild_data)
-    print(f"\n  Guild has {len(member_ally_codes)} current members")
-
-    rosters = load_player_rosters(member_ally_codes)
-    print(f"  Loaded {len(rosters)} player rosters")
-
-    # Analyze both zones
-    zeffo = analyze_zeffo_readiness(rosters)
-    mandalore = analyze_mandalore_readiness(rosters)
-
-    # Print reports
-    print_readiness_report(zeffo)
-    print_readiness_report(mandalore)
-
-    # Comparison summary
-    print("\n" + "=" * 60)
-    print("  COMPARISON SUMMARY")
-    print("=" * 60)
-
-    zeffo_pct = (zeffo.qualifying_count / zeffo.threshold) * 100
-    mandalore_pct = (mandalore.qualifying_count / mandalore.threshold) * 100
-
-    zeffo_gap = max(0, zeffo.threshold - zeffo.qualifying_count)
-    mandalore_gap = max(0, mandalore.threshold - mandalore.qualifying_count)
-
-    print(f"\n  By Qualifying Count:")
-    print(
-        f"    Zeffo:     {zeffo.qualifying_count}/{zeffo.threshold} = {zeffo_pct:.1f}% (need {zeffo_gap} more)"
-    )
-    print(
-        f"    Mandalore: {mandalore.qualifying_count}/{mandalore.threshold} = {mandalore_pct:.1f}% (need {mandalore_gap} more)"
-    )
-
-    print(f"\n  By Farmable Players (own all required units):")
-    print(f"    Zeffo:     {zeffo.farmable_count} farmable (need {zeffo_gap})")
-    print(f"    Mandalore: {mandalore.farmable_count} farmable (need {mandalore_gap})")
-
-    print(f"\n  By Distance to Fill Gap (farming effort for closest N players):")
-    zeffo_actual = min(zeffo_gap, zeffo.farmable_count)
-    mandalore_actual = min(mandalore_gap, mandalore.farmable_count)
-    print(
-        f"    Zeffo:     {zeffo.distance_to_fill_gap:.1f} distance (for {zeffo_actual} players)"
-    )
-    print(
-        f"    Mandalore: {mandalore.distance_to_fill_gap:.1f} distance (for {mandalore_actual} players)"
-    )
-
-    # Check if either zone is blocked by lack of farmable players
-    zeffo_blocked = zeffo.farmable_count < zeffo_gap
-    mandalore_blocked = mandalore.farmable_count < mandalore_gap
-
-    # Determine winner based on distance (lower is better)
-    if zeffo_blocked and not mandalore_blocked:
-        print(f"\n  >>> Guild is CLOSER to unlocking MANDALORE <<<")
-        print(
-            f"      (Zeffo blocked: only {zeffo.farmable_count} farmable but need {zeffo_gap})"
-        )
-    elif mandalore_blocked and not zeffo_blocked:
-        print(f"\n  >>> Guild is CLOSER to unlocking ZEFFO <<<")
-        print(
-            f"      (Mandalore blocked: only {mandalore.farmable_count} farmable but need {mandalore_gap})"
-        )
-    elif zeffo.distance_to_fill_gap < mandalore.distance_to_fill_gap:
-        print(f"\n  >>> Guild is CLOSER to unlocking ZEFFO <<<")
-        print(
-            f"      (Lower farming distance: {zeffo.distance_to_fill_gap:.1f} vs {mandalore.distance_to_fill_gap:.1f})"
-        )
-    elif mandalore.distance_to_fill_gap < zeffo.distance_to_fill_gap:
-        print(f"\n  >>> Guild is CLOSER to unlocking MANDALORE <<<")
-        print(
-            f"      (Lower farming distance: {mandalore.distance_to_fill_gap:.1f} vs {zeffo.distance_to_fill_gap:.1f})"
-        )
-    else:
-        print(f"\n  >>> Guild is EQUALLY close to both zones <<<")
-
-    print()
-
-    # Generate officer writeup
-    print_officer_writeup(zeffo, mandalore, rosters)
-
-    # Assertions for pytest
-    assert zeffo.qualifying_count >= 0
-    assert mandalore.qualifying_count >= 0
-    assert zeffo.threshold == 30
-    assert mandalore.threshold == 25
-
-
 def print_officer_writeup(
     zeffo: BonusZoneReadiness,
     mandalore: BonusZoneReadiness,
@@ -778,10 +696,8 @@ def print_officer_writeup(
 
     if mandalore.distance_to_fill_gap < zeffo.distance_to_fill_gap:
         recommendation = "MANDALORE"
-        reason = "lower total farming distance"
     else:
         recommendation = "ZEFFO"
-        reason = "lower total farming distance"
 
     print(
         f"""
@@ -789,7 +705,7 @@ def print_officer_writeup(
   * Zeffo:     {zeffo.qualifying_count}/30 ready ({zeffo.qualifying_count/30*100:.0f}%) - need {zeffo_gap} more
   * Mandalore: {mandalore.qualifying_count}/25 ready ({mandalore.qualifying_count/25*100:.0f}%) - need {mandalore_gap} more
 
-  Recommendation: Focus farming efforts on {recommendation} ({reason})
+  Recommendation: Focus farming efforts on {recommendation} (lower farming distance)
   
   Key Insight: While Mandalore has more players "ready" (60% vs 30%), the 
   unlock requirements for Bo-Katan (Mand'alor) create a significant farming
@@ -835,7 +751,7 @@ def print_officer_writeup(
     print("  " + "-" * 66)
     print(f"  {'Player':<20} {'Distance':>8}  {'What They Need'}")
     print("  " + "-" * 66)
-    for i, player in enumerate(zeffo.near_qualifying[:15], 1):
+    for player in zeffo.near_qualifying[:15]:
         print(f"  {player.player_name:<20} {player.distance:>8.1f}  {player.details}")
 
     # Mandalore Priority List
@@ -851,7 +767,7 @@ def print_officer_writeup(
     print("  " + "-" * 66)
     print(f"  {'Player':<20} {'Distance':>8}  {'What They Need'}")
     print("  " + "-" * 66)
-    for i, player in enumerate(mandalore.near_qualifying[:15], 1):
+    for player in mandalore.near_qualifying[:15]:
         # Truncate details if too long
         details = player.details
         if len(details) > 55:
@@ -971,5 +887,137 @@ def print_officer_writeup(
     print("=" * 70 + "\n")
 
 
+class BonusReadinessApp:
+    """Application for analyzing Rise of the Empire bonus zone readiness."""
+
+    def analyze(self, guild_id: str) -> None:
+        """Analyze guild readiness for bonus zones."""
+        print("\n" + "=" * 60)
+        print("  BONUS ZONE READINESS ANALYSIS")
+        print("  Rise of the Empire Territory Battle")
+        print("=" * 60)
+
+        # Load guild data and filter to current members only
+        guild_data = load_guild_data(guild_id)
+        guild_name = guild_data.get("name", "Unknown Guild")
+        member_ally_codes = get_current_member_ally_codes(guild_data)
+        print(f"\n  Guild: {guild_name}")
+        print(f"  Current members: {len(member_ally_codes)}")
+
+        rosters = load_player_rosters(member_ally_codes)
+        print(f"  Loaded {len(rosters)} player rosters")
+
+        # Analyze both zones
+        zeffo = analyze_zeffo_readiness(rosters)
+        mandalore = analyze_mandalore_readiness(rosters)
+
+        # Print reports
+        print_readiness_report(zeffo)
+        print_readiness_report(mandalore)
+
+        # Comparison summary
+        print("\n" + "=" * 60)
+        print("  COMPARISON SUMMARY")
+        print("=" * 60)
+
+        zeffo_pct = (zeffo.qualifying_count / zeffo.threshold) * 100
+        mandalore_pct = (mandalore.qualifying_count / mandalore.threshold) * 100
+
+        zeffo_gap = max(0, zeffo.threshold - zeffo.qualifying_count)
+        mandalore_gap = max(0, mandalore.threshold - mandalore.qualifying_count)
+
+        print(f"\n  By Qualifying Count:")
+        print(
+            f"    Zeffo:     {zeffo.qualifying_count}/{zeffo.threshold} = {zeffo_pct:.1f}% (need {zeffo_gap} more)"
+        )
+        print(
+            f"    Mandalore: {mandalore.qualifying_count}/{mandalore.threshold} = {mandalore_pct:.1f}% (need {mandalore_gap} more)"
+        )
+
+        print(f"\n  By Farmable Players (own all required units):")
+        print(f"    Zeffo:     {zeffo.farmable_count} farmable (need {zeffo_gap})")
+        print(
+            f"    Mandalore: {mandalore.farmable_count} farmable (need {mandalore_gap})"
+        )
+
+        print(f"\n  By Distance to Fill Gap (farming effort for closest N players):")
+        zeffo_actual = min(zeffo_gap, zeffo.farmable_count)
+        mandalore_actual = min(mandalore_gap, mandalore.farmable_count)
+        print(
+            f"    Zeffo:     {zeffo.distance_to_fill_gap:.1f} distance (for {zeffo_actual} players)"
+        )
+        print(
+            f"    Mandalore: {mandalore.distance_to_fill_gap:.1f} distance (for {mandalore_actual} players)"
+        )
+
+        # Check if either zone is blocked by lack of farmable players
+        zeffo_blocked = zeffo.farmable_count < zeffo_gap
+        mandalore_blocked = mandalore.farmable_count < mandalore_gap
+
+        # Determine winner based on distance (lower is better)
+        if zeffo_blocked and not mandalore_blocked:
+            print(f"\n  >>> Guild is CLOSER to unlocking MANDALORE <<<")
+            print(
+                f"      (Zeffo blocked: only {zeffo.farmable_count} farmable but need {zeffo_gap})"
+            )
+        elif mandalore_blocked and not zeffo_blocked:
+            print(f"\n  >>> Guild is CLOSER to unlocking ZEFFO <<<")
+            print(
+                f"      (Mandalore blocked: only {mandalore.farmable_count} farmable but need {mandalore_gap})"
+            )
+        elif zeffo.distance_to_fill_gap < mandalore.distance_to_fill_gap:
+            print(f"\n  >>> Guild is CLOSER to unlocking ZEFFO <<<")
+            print(
+                f"      (Lower farming distance: {zeffo.distance_to_fill_gap:.1f} vs {mandalore.distance_to_fill_gap:.1f})"
+            )
+        elif mandalore.distance_to_fill_gap < zeffo.distance_to_fill_gap:
+            print(f"\n  >>> Guild is CLOSER to unlocking MANDALORE <<<")
+            print(
+                f"      (Lower farming distance: {mandalore.distance_to_fill_gap:.1f} vs {zeffo.distance_to_fill_gap:.1f})"
+            )
+        else:
+            print(f"\n  >>> Guild is EQUALLY close to both zones <<<")
+
+        print()
+
+        # Generate officer writeup
+        print_officer_writeup(zeffo, mandalore, rosters)
+
+
+def run_rote_bonus_readiness():
+    """Entry point for rote-bonus-readiness CLI command."""
+    # Parse command line arguments
+    if len(sys.argv) < 2 or sys.argv[1] in ("--help", "-h"):
+        print("Usage: rote_bonus_readiness <guild_id>")
+        print()
+        print("Analyze guild readiness for Rise of the Empire bonus zones.")
+        print()
+        print("Arguments:")
+        print("  guild_id  The guild ID to analyze (from cached data)")
+        print()
+        print("The command reads cached data from the 'data/' directory.")
+        print("Run 'rote-platoon <ally_code>' first to populate the cache.")
+        if len(sys.argv) < 2:
+            sys.exit(1)
+        sys.exit(0)
+
+    guild_id = sys.argv[1]
+
+    try:
+        app = BonusReadinessApp()
+        app.analyze(guild_id)
+    except FileNotFoundError as e:
+        print(f"Error: {e}")
+        print("Make sure you have guild and player data in the 'data/' directory.")
+        print("Run 'rote-platoon <ally_code>' first to populate the cache.")
+        sys.exit(1)
+    except Exception as e:
+        print(f"Error: {e}")
+        import traceback
+
+        traceback.print_exc()
+        sys.exit(1)
+
+
 if __name__ == "__main__":
-    test_bonus_zone_readiness()
+    run_rote_bonus_readiness()
