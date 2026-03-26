@@ -490,7 +490,7 @@
       "unit_type": "character"
     },
     {
-      "unit_id": "MAUL",
+      "unit_id": "MAULS7",
       "unit_name": "Maul",
       "min_relic": 6,
       "path": "dark_side",
@@ -805,7 +805,7 @@
       "unit_type": "character"
     },
     {
-      "unit_id": "MAUL",
+      "unit_id": "MAULS7",
       "unit_name": "Maul",
       "min_relic": 7,
       "path": "dark_side",
@@ -1237,12 +1237,21 @@
       "unit_type": "character"
     },
     {
-      "unit_id": "MAUL",
+      "unit_id": "MAULS7",
       "unit_name": "Maul",
       "min_relic": 8,
       "path": "dark_side",
       "territory": "Haven-class Medical Station",
       "count": 3,
+      "unit_type": "character"
+    },
+    {
+      "unit_id": "MAUL",
+      "unit_name": "Darth Maul",
+      "min_relic": 8,
+      "path": "dark_side",
+      "territory": "Haven-class Medical Station",
+      "count": 1,
       "unit_type": "character"
     },
     {
@@ -1329,15 +1338,6 @@
     {
       "unit_id": "CADBANE",
       "unit_name": "Cad Bane",
-      "min_relic": 8,
-      "path": "dark_side",
-      "territory": "Haven-class Medical Station",
-      "count": 1,
-      "unit_type": "character"
-    },
-    {
-      "unit_id": "MAUL",
-      "unit_name": "Darth Maul",
       "min_relic": 8,
       "path": "dark_side",
       "territory": "Haven-class Medical Station",
@@ -1678,7 +1678,7 @@
       "unit_type": "character"
     },
     {
-      "unit_id": "MAUL",
+      "unit_id": "MAULS7",
       "unit_name": "Maul",
       "min_relic": 9,
       "path": "dark_side",
@@ -1975,7 +1975,7 @@
       "unit_type": "ship"
     },
     {
-      "unit_id": "MAUL",
+      "unit_id": "MAULS7",
       "unit_name": "Maul",
       "min_relic": 9,
       "path": "dark_side",
@@ -2965,7 +2965,7 @@
       "unit_type": "character"
     },
     {
-      "unit_id": "MAUL",
+      "unit_id": "MAULS7",
       "unit_name": "Maul",
       "min_relic": 6,
       "path": "neutral",
@@ -3379,7 +3379,7 @@
       "unit_type": "character"
     },
     {
-      "unit_id": "MAUL",
+      "unit_id": "MAULS7",
       "unit_name": "Maul",
       "min_relic": 7,
       "path": "neutral",
@@ -4270,7 +4270,7 @@
       "unit_type": "character"
     },
     {
-      "unit_id": "MAUL",
+      "unit_id": "MAULS7",
       "unit_name": "Maul",
       "min_relic": 8,
       "path": "neutral",
@@ -4990,7 +4990,7 @@
       "unit_type": "character"
     },
     {
-      "unit_id": "MAUL",
+      "unit_id": "MAULS7",
       "unit_name": "Maul",
       "min_relic": 9,
       "path": "neutral",
@@ -5188,7 +5188,7 @@
       "unit_type": "character"
     },
     {
-      "unit_id": "MAUL",
+      "unit_id": "MAULS7",
       "unit_name": "Maul",
       "min_relic": 9,
       "path": "neutral",
