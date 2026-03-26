@@ -1,7 +1,9 @@
 import dotenv
 import os
 import sys
+import traceback
 import requests
+from collections import defaultdict
 from typing import Optional
 
 from .swgoh_gg_client import SwgohGGClient
@@ -11,8 +13,12 @@ from .rote_coverage import (
     build_coverage_matrix,
     load_requirements,
     CoverageAnalyzer,
+    RoteConfig,
 )
-from .rote_models import RotePath
+from .rote_models import RotePath, SimpleRoteRequirements
+from .rote_gap_analyzer import GapAnalyzer
+from .rote_bottleneck_analyzer import BottleneckAnalyzer
+from .rote_proximity_analyzer import ProximityAnalyzer, ProgressStage
 
 
 dotenv.load_dotenv()
@@ -104,8 +110,6 @@ class KyrotechAnalysisApp:
     def _handle_general_error(self, error: Exception) -> None:
         """Handle general application errors."""
         print(f"Error: {error}")
-        import traceback
-
         traceback.print_exc()
         sys.exit(1)
 
@@ -170,10 +174,6 @@ class RotePlatoonApp:
             print("\nAnalyzing platoon coverage...")
             analyzer = CoverageAnalyzer(coverage_matrix, requirements)
 
-            from .rote_gap_analyzer import GapAnalyzer
-            from .rote_bottleneck_analyzer import BottleneckAnalyzer
-            from .rote_proximity_analyzer import ProximityAnalyzer
-
             gap_analyzer = GapAnalyzer(coverage_matrix, requirements)
             bottleneck_analyzer = BottleneckAnalyzer(coverage_matrix, requirements)
             proximity_analyzer = ProximityAnalyzer(coverage_matrix, requirements)
@@ -194,25 +194,24 @@ class RotePlatoonApp:
             sys.exit(1)
         except Exception as e:
             print(f"Error: {e}")
-            import traceback
-
             traceback.print_exc()
             sys.exit(1)
 
     def _filter_requirements_by_phase(self, requirements, max_phase: str):
         """Filter requirements to only include territories up to max_phase."""
-        from .rote_coverage import RoteConfig
-        from .rote_models import SimpleRoteRequirements
-
-        phase_order = ["1", "2", "3", "3b", "4", "4b", "5", "5b", "6"]
+        base_phases = ["1", "2", "3", "4", "5", "6"]
 
         try:
-            max_phase_idx = phase_order.index(max_phase)
+            max_phase_idx = base_phases.index(max_phase)
         except ValueError:
             print(f"Warning: Unknown phase '{max_phase}', using all phases.")
             return requirements
 
-        included_phases = set(phase_order[: max_phase_idx + 1])
+        included_phases = set()
+        for i in range(max_phase_idx + 1):
+            phase = base_phases[i]
+            included_phases.add(phase)
+            included_phases.add(f"{phase}b")  # Include bonus planet for this phase
 
         filtered_reqs = []
         for req in requirements.requirements:
@@ -235,9 +234,6 @@ class RotePlatoonApp:
         proximity_analyzer=None,
     ) -> None:
         """Display complete ROTE platoon analysis results."""
-        from .rote_coverage import RoteConfig
-        from collections import defaultdict
-
         summary = analyzer.get_coverage_summary_by_territory()
 
         print(f"\n{'='*60}")
@@ -389,8 +385,6 @@ class RotePlatoonApp:
 
     def _display_farming_recommendations(self, proximity_analyzer) -> None:
         """Display farming recommendations for platoon gaps."""
-        from .rote_proximity_analyzer import ProgressStage
-
         recommendations = proximity_analyzer.get_farming_recommendations(
             max_recommendations=15
         )
