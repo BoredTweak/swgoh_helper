@@ -212,6 +212,7 @@ __marimo__/
 # data files unless it's rote_platoon_requirements.json
 data/*
 !data/rote_platoon_requirements.json
+!data/relic_costs.json
 
 # VS Code settings
 .vscode/

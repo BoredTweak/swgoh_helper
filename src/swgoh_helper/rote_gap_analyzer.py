@@ -5,43 +5,17 @@ Analyzes platoon coverage to identify gaps where the guild lacks sufficient
 player coverage for specific unit requirements.
 """
 
-from dataclasses import dataclass
-from enum import Enum
 from typing import Dict, List
 
-from .rote_models import RotePath, SimpleRoteRequirements, UnitRequirement
-from .rote_coverage import CoverageMatrix, RoteConfig
-
-
-class GapSeverity(Enum):
-    """Severity levels for platoon gaps."""
-
-    CRITICAL = "critical"  # < 3 players available
-    WARNING = "warning"  # 3-9 players available
-    HEALTHY = "healthy"  # 10+ players available
-    OVERFILLED = "overfilled"  # More players than slots needed
-
-
-@dataclass
-class PlatoonGap:
-    """Represents a gap in platoon coverage for a specific unit requirement."""
-
-    unit_id: str
-    unit_name: str
-    path: RotePath
-    territory: str
-    min_relic: int
-    slots_needed: int
-    players_available: int
-    player_names: List[str]
-    coverage_ratio: float  # players_available / guild_size
-    severity: GapSeverity
-    slots_unfillable: int  # How many slots can't be filled
-
-    @property
-    def is_gap(self) -> bool:
-        """Returns True if this represents an actual gap (not enough players)."""
-        return self.players_available < self.slots_needed
+from .models.rote import (
+    RotePath,
+    SimpleRoteRequirements,
+    UnitRequirement,
+    CoverageMatrix,
+    GapSeverity,
+    PlatoonGap,
+)
+from .rote_coverage import RoteConfig
 
 
 class GapAnalyzer:

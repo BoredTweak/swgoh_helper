@@ -19,6 +19,7 @@ from .rote_models import RotePath, SimpleRoteRequirements
 from .rote_gap_analyzer import GapAnalyzer
 from .rote_bottleneck_analyzer import BottleneckAnalyzer
 from .rote_proximity_analyzer import ProximityAnalyzer, ProgressStage
+from .constants import MAX_PLAYERS_PER_UNIT
 
 
 dotenv.load_dotenv()
@@ -121,7 +122,11 @@ class RotePlatoonApp:
         self.client = SwgohGGClient(api_key)
 
     def analyze_guild(
-        self, ally_code: str, max_phase: Optional[str] = None, refresh: bool = False
+        self,
+        ally_code: str,
+        max_phase: Optional[str] = None,
+        refresh: bool = False,
+        by_territory: bool = False,
     ) -> None:
         """Fetch guild information and analyze platoon coverage."""
         try:
@@ -184,6 +189,7 @@ class RotePlatoonApp:
                 gap_analyzer,
                 bottleneck_analyzer,
                 proximity_analyzer,
+                by_territory=by_territory,
             )
 
         except ValueError as e:
@@ -232,6 +238,7 @@ class RotePlatoonApp:
         gap_analyzer,
         bottleneck_analyzer,
         proximity_analyzer=None,
+        by_territory: bool = False,
     ) -> None:
         """Display complete ROTE platoon analysis results."""
         summary = analyzer.get_coverage_summary_by_territory()
@@ -265,11 +272,11 @@ class RotePlatoonApp:
                 phase = RoteConfig.TERRITORY_PHASE.get(territory, "?")
 
                 if pct == 100:
-                    status = "✅"
+                    status = "[OK]"
                 elif pct >= 80:
-                    status = "⚠️"
+                    status = "[!!]"
                 else:
-                    status = "❌"
+                    status = "[XX]"
 
                 print(
                     f"  {status} P{phase} {territory}: {covered}/{total} slots ({pct:.0f}%)"
@@ -312,7 +319,7 @@ class RotePlatoonApp:
         print("-" * 40)
 
         if not critical_gaps:
-            print("\n✅ No critical gaps detected!")
+            print("\n[OK] No critical gaps detected!")
         else:
             gaps_by_territory = {}
             for gap in critical_gaps:
@@ -350,7 +357,7 @@ class RotePlatoonApp:
         print("-" * 40)
 
         if not available_rare:
-            print("\n✅ No limited availability units!")
+            print("\n[OK] No limited availability units!")
         else:
             sole_owner = [u for u in available_rare if u.owner_count == 1]
             two_owners = [u for u in available_rare if u.owner_count == 2]
@@ -358,28 +365,31 @@ class RotePlatoonApp:
 
             if sole_owner:
                 units_str = "\n  ".join(
-                    f"{u.unit_name} R{u.min_relic}→{u.owner_names[0]}"
+                    f"{u.unit_name} R{u.min_relic} -> {u.owner_names[0]}"
                     for u in sole_owner
                 )
                 print(f"\n1 owner ({len(sole_owner)}):\n  {units_str}")
 
             if two_owners:
                 units_str = "\n  ".join(
-                    f"{u.unit_name} R{u.min_relic}→{', '.join(u.owner_names[:2])}"
+                    f"{u.unit_name} R{u.min_relic} -> {', '.join(u.owner_names[:2])}"
                     for u in two_owners
                 )
                 print(f"\n2 owners ({len(two_owners)}):\n  {units_str}")
 
             if three_owners:
                 units_str = "\n  ".join(
-                    f"{u.unit_name} R{u.min_relic}→{', '.join(u.owner_names[:3])}"
+                    f"{u.unit_name} R{u.min_relic} -> {', '.join(u.owner_names[:3])}"
                     for u in three_owners
                 )
                 print(f"\n3 owners ({len(three_owners)}):\n  {units_str}")
 
         # Farming recommendations (closest players to gaps)
         if proximity_analyzer:
-            self._display_farming_recommendations(proximity_analyzer)
+            if by_territory:
+                self._display_farming_recommendations_by_territory(proximity_analyzer)
+            else:
+                self._display_farming_recommendations(proximity_analyzer)
 
         print()
 
@@ -393,7 +403,7 @@ class RotePlatoonApp:
         print("-" * 40)
 
         if not recommendations:
-            print("\n✅ No actionable farming recommendations!")
+            print("\n[OK] No actionable farming recommendations!")
             return
 
         for unit_name, relic_req, closest_players in recommendations:
@@ -441,6 +451,23 @@ class RotePlatoonApp:
 
                 print(f"  - {label} ({count}): {names_str}")
 
+    def _display_farming_recommendations_by_territory(self, proximity_analyzer) -> None:
+        """Display farming recommendations grouped by territory/planet."""
+        from .rote_proximity_analyzer import format_territory_recommendations
+
+        recommendations = proximity_analyzer.get_farming_recommendations_by_territory(
+            max_players_per_unit=MAX_PLAYERS_PER_UNIT
+        )
+
+        print(f"\n\nFarming recommendations by territory")
+        print("-" * 40)
+
+        if not recommendations:
+            print("\n[OK] No actionable farming recommendations!")
+            return
+
+        print(format_territory_recommendations(recommendations))
+
 
 def print_usage():
     """Print usage information."""
@@ -450,12 +477,15 @@ def print_usage():
     print(
         "  kyrotech <ally_code>      Analyze a player's roster for kyrotech requirements"
     )
-    print("  rote_platoon <ally_code> [--max-phase N] [--refresh]")
+    print("  rote_platoon <ally_code> [--max-phase N] [--refresh] [--by-territory]")
     print("                            Analyze guild for RotE platoon requirements")
     print("                            --max-phase: Limit analysis to phases up to N")
     print("                                         (e.g., 4, 3b, 5)")
     print(
         "                            --refresh:   Force fresh data from API (ignore cache)"
+    )
+    print(
+        "                            --by-territory: Group farming recommendations by planet"
     )
     print()
     print("Examples:")
@@ -496,7 +526,9 @@ def run_kyrotech():
 def run_rote_platoon():
     """Entry point for rote-platoon CLI command."""
     if len(sys.argv) < 2:
-        print("Usage: rote-platoon <ally_code> [--max-phase N] [--refresh]")
+        print(
+            "Usage: rote-platoon <ally_code> [--max-phase N] [--refresh] [--by-territory]"
+        )
         sys.exit(1)
 
     if not SWGOH_API_KEY:
@@ -507,14 +539,19 @@ def run_rote_platoon():
     ally_code = sys.argv[1]
     max_phase = None
     refresh = False
+    by_territory = False
     for i, arg in enumerate(sys.argv[2:], start=2):
         if arg == "--max-phase" and i + 1 < len(sys.argv):
             max_phase = sys.argv[i + 1]
         elif arg == "--refresh":
             refresh = True
+        elif arg == "--by-territory":
+            by_territory = True
 
     app = RotePlatoonApp(SWGOH_API_KEY)
-    app.analyze_guild(ally_code, max_phase=max_phase, refresh=refresh)
+    app.analyze_guild(
+        ally_code, max_phase=max_phase, refresh=refresh, by_territory=by_territory
+    )
 
 
 def main():

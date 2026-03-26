@@ -4,12 +4,7 @@ Presentation layer for displaying kyrotech analysis results.
 
 from typing import List, Tuple, Dict
 
-
-SALVAGE_DISPLAY_NAMES = {
-    "172Salvage": "Mk 7 Kyrotech Shock Prod Prototype Salvage",
-    "173Salvage": "Mk 9 Kyrotech Battle Computer Prototype Salvage",
-    "174Salvage": "Mk 5 Kyrotech Power Cell Prototype Salvage",
-}
+from .constants import KYROTECH_SALVAGE_IDS
 
 
 class ResultsPresenter:
@@ -18,7 +13,7 @@ class ResultsPresenter:
     """
 
     def __init__(self, display_names: Dict[str, str] = None):
-        self.display_names = display_names or SALVAGE_DISPLAY_NAMES
+        self.display_names = display_names or KYROTECH_SALVAGE_IDS
 
     def display_results(
         self, results: List[Tuple[str, int, Dict[str, int], int]]

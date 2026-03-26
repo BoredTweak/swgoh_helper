@@ -8,11 +8,18 @@ Builds a coverage matrix showing how many players have each unit at each relic t
 import json
 from pathlib import Path
 from typing import Dict, List, Optional, Tuple
-from dataclasses import dataclass, field
 from collections import defaultdict
 
 from .models import PlayerResponse, Unit, UnitsResponse
-from .rote_models import RotePath, SimpleRoteRequirements, UnitRequirement
+from .models.rote import (
+    RotePath,
+    SimpleRoteRequirements,
+    UnitRequirement,
+    PlayerUnitInfo,
+    UnitCoverage,
+    CoverageMatrix,
+    RequirementCoverage,
+)
 
 
 class RoteConfig:
@@ -67,128 +74,6 @@ class RoteConfig:
         "Hoth": "6",
         "Death Star": "6",
     }
-
-
-@dataclass
-class PlayerUnitInfo:
-    """Information about a player's ownership of a unit."""
-
-    player_name: str
-    ally_code: int
-    relic_tier: int  # Actual relic (0-9), not API value
-    gear_level: int = 13  # Gear level 1-13
-    rarity: int = 7  # Star level 1-7
-
-
-@dataclass
-class UnitCoverage:
-    """Coverage data for a single unit across the guild."""
-
-    unit_id: str
-    unit_name: str
-    alignment: int  # 1=Light, 2=Dark
-    combat_type: int  # 1=Character, 2=Ship
-    categories: List[str] = field(default_factory=list)
-
-    # Players at each relic threshold: relic_level -> list of player info
-    players_by_relic: Dict[int, List[PlayerUnitInfo]] = field(
-        default_factory=lambda: defaultdict(list)
-    )
-
-    def count_at_relic(self, min_relic: int) -> int:
-        """Count players who have this unit at or above a relic threshold."""
-        count = 0
-        for relic_level, players in self.players_by_relic.items():
-            if relic_level >= min_relic:
-                count += len(players)
-        return count
-
-    def players_at_relic(self, min_relic: int) -> List[PlayerUnitInfo]:
-        """Get list of players who have this unit at or above a relic threshold."""
-        result = []
-        for relic_level, players in self.players_by_relic.items():
-            if relic_level >= min_relic:
-                result.extend(players)
-        return result
-
-    def all_players(self) -> List[PlayerUnitInfo]:
-        """Get all players who have this unit at any level."""
-        result = []
-        for players in self.players_by_relic.values():
-            result.extend(players)
-        return result
-
-    def players_below_relic(self, required_relic: int) -> List[PlayerUnitInfo]:
-        """Get players who have this unit but below the required relic threshold."""
-        result = []
-        for relic_level, players in self.players_by_relic.items():
-            if relic_level < required_relic:
-                result.extend(players)
-        return result
-
-
-@dataclass
-class CoverageMatrix:
-    """
-    Complete coverage matrix for a guild.
-
-    Maps unit_id -> UnitCoverage, providing easy lookup of which players
-    have which units at which relic levels.
-    """
-
-    guild_name: str
-    guild_id: str
-    member_count: int
-    units: Dict[str, UnitCoverage] = field(default_factory=dict)
-
-    def get_coverage(self, unit_id: str) -> Optional[UnitCoverage]:
-        """Get coverage data for a specific unit."""
-        return self.units.get(unit_id)
-
-    def get_count_at_relic(self, unit_id: str, min_relic: int) -> int:
-        """Get count of players with a unit at a minimum relic level."""
-        coverage = self.units.get(unit_id)
-        if coverage is None:
-            return 0
-        return coverage.count_at_relic(min_relic)
-
-    def get_players_at_relic(
-        self, unit_id: str, min_relic: int
-    ) -> List[PlayerUnitInfo]:
-        """Get players who have a unit at a minimum relic level."""
-        coverage = self.units.get(unit_id)
-        if coverage is None:
-            return []
-        return coverage.players_at_relic(min_relic)
-
-    def get_players_below_relic(
-        self, unit_id: str, required_relic: int
-    ) -> List[PlayerUnitInfo]:
-        """Get players who have a unit but below the required relic level."""
-        coverage = self.units.get(unit_id)
-        if coverage is None:
-            return []
-        return coverage.players_below_relic(required_relic)
-
-    def get_all_players(self, unit_id: str) -> List[PlayerUnitInfo]:
-        """Get all players who have a unit at any level."""
-        coverage = self.units.get(unit_id)
-        if coverage is None:
-            return []
-        return coverage.all_players()
-
-    def get_coverage_summary(self, unit_id: str) -> Dict[int, int]:
-        """
-        Get a summary of player counts at each relic threshold.
-
-        Returns dict like: {5: 45, 6: 42, 7: 38, 8: 12, 9: 3}
-        where key is min_relic and value is player count at or above that level.
-        """
-        coverage = self.units.get(unit_id)
-        if coverage is None:
-            return {r: 0 for r in range(5, 10)}
-
-        return {r: coverage.count_at_relic(r) for r in range(5, 10)}
 
 
 class CoverageMatrixBuilder:
@@ -337,16 +222,6 @@ class RoteRequirementsLoader:
             data = json.load(f)
 
         return SimpleRoteRequirements(**data)
-
-
-@dataclass
-class RequirementCoverage:
-    """Coverage analysis for a single platoon requirement."""
-
-    requirement: UnitRequirement
-    players_available: int
-    player_names: List[str]
-    coverage_ratio: float  # players_available / guild_size
 
 
 class CoverageAnalyzer:

@@ -1,0 +1,140 @@
+{
+  "version": "1.0",
+  "last_updated": "2026-03-26",
+  "notes": "Relic upgrade costs per tier. Materials are counted per upgrade (not cumulative).",
+  "materials": {
+    "signal_data_fragmented": {"name": "Fragmented Signal Data"},
+    "signal_data_incomplete": {"name": "Incomplete Signal Data"},
+    "signal_data_flawed": {"name": "Flawed Signal Data"},
+    "signal_data_corrupted": {"name": "Corrupted Signal Data"},
+    "carbonite_circuit_board": {"name": "Carbonite Circuit Board"},
+    "bronzium_wiring": {"name": "Bronzium Wiring"},
+    "chromium_transistor": {"name": "Chromium Transistor"},
+    "aurodium_heatsink": {"name": "Aurodium Heatsink"},
+    "electrium_conductor": {"name": "Electrium Conductor"},
+    "zinbiddle_card": {"name": "Zinbiddle Card"},
+    "impulse_detector": {"name": "Impulse Detector"},
+    "aeromagnifier": {"name": "Aeromagnifier"},
+    "gyrda_keypad": {"name": "Gyrda Keypad"},
+    "droid_brain": {"name": "Droid Brain"},
+    "coaxial_servomotor": {"name": "Coaxial Servomotor"}
+  },
+  "tier_costs": {
+    "1": {
+      "description": "G13 to Relic 1",
+      "credits": 10000,
+      "carbonite_circuit_board": 40
+    },
+    "2": {
+      "description": "Relic 1 to Relic 2",
+      "credits": 25000,
+      "signal_data_fragmented": 15,
+      "carbonite_circuit_board": 30,
+      "bronzium_wiring": 40
+    },
+    "3": {
+      "description": "Relic 2 to Relic 3",
+      "credits": 50000,
+      "signal_data_fragmented": 20,
+      "signal_data_incomplete": 15,
+      "carbonite_circuit_board": 30,
+      "bronzium_wiring": 40,
+      "chromium_transistor": 20
+    },
+    "4": {
+      "description": "Relic 3 to Relic 4",
+      "credits": 75000,
+      "signal_data_fragmented": 20,
+      "signal_data_incomplete": 25,
+      "carbonite_circuit_board": 30,
+      "bronzium_wiring": 40,
+      "chromium_transistor": 40
+    },
+    "5": {
+      "description": "Relic 4 to Relic 5",
+      "credits": 100000,
+      "signal_data_fragmented": 20,
+      "signal_data_incomplete": 25,
+      "signal_data_flawed": 15,
+      "carbonite_circuit_board": 30,
+      "bronzium_wiring": 40,
+      "chromium_transistor": 30,
+      "aurodium_heatsink": 20
+    },
+    "6": {
+      "description": "Relic 5 to Relic 6",
+      "credits": 250000,
+      "signal_data_fragmented": 20,
+      "signal_data_incomplete": 25,
+      "signal_data_flawed": 25,
+      "carbonite_circuit_board": 20,
+      "bronzium_wiring": 30,
+      "chromium_transistor": 30,
+      "aurodium_heatsink": 20,
+      "electrium_conductor": 20
+    },
+    "7": {
+      "description": "Relic 6 to Relic 7",
+      "credits": 500000,
+      "signal_data_fragmented": 20,
+      "signal_data_incomplete": 25,
+      "signal_data_flawed": 35,
+      "carbonite_circuit_board": 20,
+      "bronzium_wiring": 30,
+      "chromium_transistor": 20,
+      "aurodium_heatsink": 20,
+      "electrium_conductor": 20,
+      "zinbiddle_card": 10
+    },
+    "8": {
+      "description": "Relic 7 to Relic 8",
+      "credits": 1000000,
+      "signal_data_fragmented": 20,
+      "signal_data_incomplete": 25,
+      "signal_data_flawed": 45,
+      "chromium_transistor": 20,
+      "aurodium_heatsink": 20,
+      "electrium_conductor": 20,
+      "zinbiddle_card": 20,
+      "impulse_detector": 20,
+      "aeromagnifier": 20
+    },
+    "9": {
+      "description": "Relic 8 to Relic 9",
+      "credits": 1500000,
+      "signal_data_incomplete": 30,
+      "signal_data_flawed": 55,
+      "electrium_conductor": 20,
+      "zinbiddle_card": 20,
+      "impulse_detector": 20,
+      "aeromagnifier": 20,
+      "gyrda_keypad": 20,
+      "droid_brain": 20
+    },
+    "10": {
+      "description": "Relic 9 to Relic 10",
+      "credits": 2000000,
+      "signal_data_incomplete": 25,
+      "signal_data_flawed": 45,
+      "signal_data_corrupted": 15,
+      "impulse_detector": 20,
+      "aeromagnifier": 20,
+      "gyrda_keypad": 20,
+      "droid_brain": 20,
+      "coaxial_servomotor": 20
+    }
+  },
+  "relative_weights": {
+    "description": "Relative cost weights based on material scarcity, not credits. Key gates: Aurodium (R5), Zinbiddle (R7), Impulse/Aero (R8), Gyrda/Droid (R9)",
+    "1": 1.0,
+    "2": 1.5,
+    "3": 2.0,
+    "4": 2.5,
+    "5": 4.0,
+    "6": 6.0,
+    "7": 10.0,
+    "8": 20.0,
+    "9": 30.0,
+    "10": 40.0
+  }
+}

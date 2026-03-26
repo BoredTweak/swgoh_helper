@@ -5,17 +5,8 @@ Service layer for analyzing kyrotech gear requirements in SWGOH.
 from typing import Dict, List, Tuple
 from collections import defaultdict
 
+from .constants import KYROTECH_SALVAGE_IDS, MAX_GEAR_TIER
 from .models import GearTier, GearPiece, Unit, PlayerUnit
-
-
-# Constants for kyrotech salvage IDs
-KYROTECH_SALVAGE_IDS = {
-    "172Salvage": "Mk 7 Kyrotech Shock Prod Prototype Salvage",
-    "173Salvage": "Mk 9 Kyrotech Battle Computer Prototype Salvage",
-    "174Salvage": "Mk 5 Kyrotech Power Cell Prototype Salvage",
-}
-
-MAX_GEAR_TIER = 13
 
 
 class KyrotechAnalyzer:

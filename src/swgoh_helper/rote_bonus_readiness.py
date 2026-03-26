@@ -22,105 +22,30 @@ Distance scoring uses the farming recommendations formula:
 import json
 import sys
 from pathlib import Path
-from dataclasses import dataclass
 from typing import Dict, List, Set, Tuple
 
+from swgoh_helper.constants import (
+    ZEFFO_UNITS,
+    MANDALORE_UNITS,
+    BOKATAN_PREREQS,
+    BESKAR_PREREQS,
+    ZEFFO_THRESHOLD,
+    MANDALORE_THRESHOLD,
+    MIN_RELIC_TIER,
+    BESKAR_MIN_GEAR,
+    BESKAR_MIN_STARS,
+    BOKATAN_MIN_RELIC,
+    RELIC_WEIGHT,
+    GEAR_WEIGHT,
+    STAR_WEIGHT,
+    RELIC_STAR_REQUIREMENTS,
+)
 from swgoh_helper.models import PlayerResponse
-
-
-# Unit IDs for bonus zone unlock requirements
-ZEFFO_UNITS = {
-    "CEREJUNDA": "Cere Junda",
-    "CALKESTIS": "Cal Kestis",
-    "JEDIKNIGHTCAL": "Jedi Knight Cal Kestis",
-}
-
-MANDALORE_UNITS = {
-    "MANDALORBOKATAN": "Bo-Katan (Mand'alor)",
-    "THEMANDALORIANBESKARARMOR": "The Mandalorian (Beskar Armor)",
-}
-
-# Bo-Katan (Mand'alor) unlock requirements: R7 for all of these
-BOKATAN_PREREQS = {
-    "KELLERANBEQ": "Kelleran Beq",
-    "PAZVIZSLA": "Paz Vizsla",
-    "IG12": "IG-12 & Grogu",
-    "THEMANDALORIANBESKARARMOR": "The Mandalorian (Beskar Armor)",
-}
-
-# The Mandalorian (Beskar Armor) unlock requirements: 7* G12 for all of these
-BESKAR_PREREQS = {
-    "THEMANDALORIAN": "The Mandalorian",
-    "GREEFKARGA": "Greef Karga",
-    "CARADUNE": "Cara Dune",
-    "IG11": "IG-11",
-    "KUIIL": "Kuiil",
-}
-
-# Unlock thresholds
-ZEFFO_THRESHOLD = 30
-MANDALORE_THRESHOLD = 25
-
-# Minimum relic tier required (R1 = 1, R5 = 5, etc.)
-MIN_RELIC_TIER = 7  # Must have at least R7 to qualify
-
-# Beskar Mando unlock requirement
-BESKAR_MIN_GEAR = 12
-BESKAR_MIN_STARS = 7
-
-# Bo-Katan unlock requirement (all prereqs at R7)
-BOKATAN_MIN_RELIC = 7
-
-# Distance scoring weights (from farming recommendations)
-RELIC_WEIGHT = 1.0  # Each relic level
-GEAR_WEIGHT = 0.5  # Each gear level to G13
-STAR_WEIGHT = 2.0  # Each missing star
-
-# Star requirements for relic levels
-RELIC_STAR_REQUIREMENTS = {
-    0: 0,
-    1: 5,
-    2: 5,
-    3: 5,
-    4: 6,
-    5: 7,
-    6: 7,
-    7: 7,
-    8: 7,
-    9: 7,
-}
-
-
-@dataclass
-class PlayerUnitStatus:
-    """Track which units a player has for a bonus zone."""
-
-    player_name: str
-    ally_code: int
-    has_units: Dict[str, Tuple[bool, int]]  # unit_id -> (has_it, relic_tier)
-
-
-@dataclass
-class PlayerDistance:
-    """A player's distance from qualifying for a bonus zone."""
-
-    player_name: str
-    distance: float  # Total distance (lower = closer to qualifying)
-    details: str  # Human-readable status
-
-
-@dataclass
-class BonusZoneReadiness:
-    """Readiness analysis for a bonus zone."""
-
-    zone_name: str
-    threshold: int
-    qualifying_players: List[str]
-    qualifying_count: int
-    near_qualifying: List[PlayerDistance]  # Players sorted by distance
-    distance_to_fill_gap: float  # Sum of distances for top N players needed to fill gap
-    farmable_count: int  # How many players own all required units (can farm to qualify)
-    is_unlockable: bool
+from swgoh_helper.models.rote import (
+    PlayerUnitStatus,
+    PlayerDistance,
+    BonusZoneReadiness,
+)
 
 
 def calculate_unit_distance(
@@ -240,8 +165,7 @@ def convert_relic_tier(api_relic_tier: int | None) -> int:
     return api_relic_tier - 2
 
 
-@dataclass
-class PrereqStatus:
+class PrereqStatus(BaseModel):
     """Status of unlock prerequisites for a character."""
 
     can_unlock: bool  # Already has the character unlocked
@@ -375,8 +299,7 @@ def calculate_bokatan_prereq_status(roster: PlayerResponse) -> PrereqStatus:
     )
 
 
-@dataclass
-class UnitProgress:
+class UnitProgress(BaseModel):
     """Progress data for a single unit."""
 
     has_unit: bool

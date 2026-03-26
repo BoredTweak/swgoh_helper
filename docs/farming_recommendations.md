@@ -8,7 +8,8 @@ For each platoon **gap** (a unit requirement the guild can't fully fill), the sy
 
 1. Finds all guild members who own the unit but don't meet the requirement
 2. Calculates a "distance score" for each player
-3. Groups players by distance and displays the closest candidates
+3. Groups players by distance score (ties are grouped together)
+4. Displays up to 3 distance groups, showing the closest candidates first
 
 ## Distance Score Calculation
 
@@ -89,3 +90,45 @@ Each line shows:
 - **Names**: List of player names
 
 Players with identical distance scores are grouped together (ties).
+
+## Gap Aggregation
+
+When the same unit at the same relic level appears across multiple territories (e.g., Darth Vader R7 needed in both Mustafar and Bracca), the gaps are **combined**. The farming recommendation shows the total unfillable slots across all territories, and analyzes player proximity once for that unit/relic combination.
+
+## Output Limits
+
+The system applies these limits to keep output focused:
+
+| Limit | Value | Description |
+|-------|-------|-------------|
+| **Max recommendations** | 15 | Maximum number of unit gaps shown |
+| **Distance groups** | 3 | Up to 3 distinct distance levels per unit |
+| **Candidates analyzed** | 15 | Max players evaluated per gap |
+
+Recommendations are sorted by the **closest player's distance score**, so gaps with players nearest to completion appear first.
+
+## Practical Guidance
+
+### Interpreting Results
+
+When reviewing farming recommendations:
+
+1. **Focus on low-distance players first** — A player with distance 2.0 will reach the requirement much faster than one at 8.0
+2. **Watch for star-gated players** — Even if someone has high gear, needing 2★ adds significant farming time
+3. **Consider multiple players per gap** — Having several players at similar distances provides backup options
+
+### Strategic Considerations
+
+| Scenario | Recommended Action |
+|----------|-------------------|
+| Many players at +1R or +2R | Quick wins — coordinate a gear push |
+| All candidates star-gated | Long-term farm — plan for future TBs |
+| Single player close, others far | High-priority target, but risky if they leave |
+| No candidates at all | Unit not unlocked in guild — recruiting opportunity |
+
+### Example Workflow
+
+1. Run analysis after each TB to identify current gaps
+2. Share recommendations with officers for farming coordination
+3. Track progress over successive TBs to measure improvement
+4. Re-prioritize if new phases are unlocked or requirements change

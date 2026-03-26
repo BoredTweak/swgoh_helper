@@ -5,34 +5,13 @@ Identifies bottleneck players who are sole/rare owners of required units,
 and detects cross-planet deployment conflicts.
 """
 
-from dataclasses import dataclass
 from typing import Dict, List, Tuple
 
-from .rote_models import SimpleRoteRequirements
-from .rote_coverage import CoverageMatrix
-
-
-@dataclass
-class UnicornUnit:
-    """A unit that only a few players have at the required relic level."""
-
-    unit_id: str
-    unit_name: str
-    min_relic: int
-    owner_names: List[str]
-    owner_count: int
-    territories_needed: List[str]  # Which territories need this unit
-    total_slots_needed: int  # Total slots across all territories
-
-    @property
-    def is_sole_owner(self) -> bool:
-        """Returns True if only one player has this unit."""
-        return self.owner_count == 1
-
-    @property
-    def is_critical(self) -> bool:
-        """Returns True if fewer than 3 players have this unit."""
-        return self.owner_count < 3
+from .models.rote import (
+    SimpleRoteRequirements,
+    CoverageMatrix,
+    UnicornUnit,
+)
 
 
 class BottleneckAnalyzer:

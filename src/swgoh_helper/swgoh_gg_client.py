@@ -49,14 +49,17 @@ class SwgohGGClient:
         fetch_func: Callable[[], Any],
         cache_message: str,
         fetch_message: str,
+        silent: bool = False,
     ) -> Any:
         cached_data = self.cache.get(cache_key)
         if cached_data is not None:
-            print(cache_message)
+            if not silent:
+                print(cache_message)
             return cached_data
 
         # Fetch from API if cache miss
-        print(fetch_message)
+        if not silent:
+            print(fetch_message)
         data = fetch_func()
         self.cache.set(cache_key, data)
         return data
@@ -107,7 +110,7 @@ class SwgohGGClient:
             gear_by_id[gear_piece.base_id] = gear_piece
         return gear_by_id
 
-    def get_player_units(self, ally_code: str) -> PlayerResponse:
+    def get_player_units(self, ally_code: str, silent: bool = False) -> PlayerResponse:
         """Fetch player's units/roster from SWGOH.GG API."""
         normalized_ally_code = ally_code.replace("-", "")
 
@@ -122,6 +125,7 @@ class SwgohGGClient:
             fetch_func=fetch_from_api,
             cache_message=f"Loading {normalized_ally_code} player data from cache...",
             fetch_message="Fetching player data from API...",
+            silent=silent,
         )
 
         return PlayerResponse(**data)
@@ -240,7 +244,7 @@ class SwgohGGClient:
 
         with ThreadPoolExecutor(max_workers=max_workers) as executor:
             future_to_code = {
-                executor.submit(self.get_player_units, str(code)): code
+                executor.submit(self.get_player_units, str(code), silent=True): code
                 for code in ally_codes
             }
 

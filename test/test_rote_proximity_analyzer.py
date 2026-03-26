@@ -247,7 +247,9 @@ def test_calculate_progress_reliced_player(mock_coverage_matrix, mock_requiremen
         rarity=7,
     )
 
-    progress = analyzer.calculate_player_progress(player, "Vader", required_relic=7)
+    progress = analyzer.calculate_player_progress(
+        player, "VADER", "Vader", required_relic=7
+    )
 
     assert progress.stage == ProgressStage.RELICED
     assert progress.relic_gap == 2  # R5 -> R7 = 2 levels
@@ -267,7 +269,9 @@ def test_calculate_progress_gearing_player(mock_coverage_matrix, mock_requiremen
         rarity=7,
     )
 
-    progress = analyzer.calculate_player_progress(player, "Vader", required_relic=7)
+    progress = analyzer.calculate_player_progress(
+        player, "VADER", "Vader", required_relic=7
+    )
 
     assert progress.stage == ProgressStage.GEARING
     assert progress.gear_gap == 3  # G10 -> G13 = 3 levels
@@ -287,7 +291,9 @@ def test_calculate_progress_star_gated_player(mock_coverage_matrix, mock_require
         rarity=5,
     )
 
-    progress = analyzer.calculate_player_progress(player, "Vader", required_relic=7)
+    progress = analyzer.calculate_player_progress(
+        player, "VADER", "Vader", required_relic=7
+    )
 
     assert progress.stage == ProgressStage.STAR_GATED
     assert progress.star_gap == 2  # 5* -> 7* = 2 stars
@@ -305,7 +311,9 @@ def test_calculate_progress_g13_player(mock_coverage_matrix, mock_requirements):
         rarity=7,
     )
 
-    progress = analyzer.calculate_player_progress(player, "Vader", required_relic=7)
+    progress = analyzer.calculate_player_progress(
+        player, "VADER", "Vader", required_relic=7
+    )
 
     assert progress.stage == ProgressStage.GEAR_13
     assert progress.gear_gap == 0
@@ -336,9 +344,9 @@ def test_distance_score_ordering(mock_coverage_matrix, mock_requirements):
         player_name="G10_5star", ally_code=3, relic_tier=-1, gear_level=10, rarity=5
     )
 
-    r5_progress = analyzer.calculate_player_progress(r5_player, "Vader", 7)
-    g12_progress = analyzer.calculate_player_progress(g12_player, "Vader", 7)
-    g10_progress = analyzer.calculate_player_progress(g10_5star, "Vader", 7)
+    r5_progress = analyzer.calculate_player_progress(r5_player, "VADER", "Vader", 7)
+    g12_progress = analyzer.calculate_player_progress(g12_player, "VADER", "Vader", 7)
+    g10_progress = analyzer.calculate_player_progress(g10_5star, "VADER", "Vader", 7)
 
     # R5 should have lowest distance, then G12, then G10 with star gate
     assert r5_progress.distance_score < g12_progress.distance_score

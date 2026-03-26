@@ -36,14 +36,17 @@ class CacheManager:
 
     def get(self, cache_key: str) -> Optional[dict]:
         """Retrieve data from cache if valid, otherwise None."""
-        if not self.is_valid(cache_key):
+        cache_path = self._get_cache_path(cache_key)
+
+        if not cache_path.exists():
             return None
 
-        cache_path = self._get_cache_path(cache_key)
         try:
             cache_data = self._load_cache_file(cache_path)
+            if not self._is_timestamp_valid(cache_data.get("timestamp")):
+                return None
             return cache_data.get("data")
-        except (json.JSONDecodeError, KeyError, OSError):
+        except (json.JSONDecodeError, KeyError, ValueError, OSError):
             return None
 
     def set(self, cache_key: str, data: Any) -> None:
