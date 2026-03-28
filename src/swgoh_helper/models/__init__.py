@@ -13,7 +13,7 @@ Models are organized into submodules:
 """
 
 # Enums
-from .enums import GACFormat, GACLeague
+from .enums import CombatType, GACFormat, GACLeague
 
 # Units
 from .units import GearTier, Unit, UnitsResponse
@@ -93,8 +93,12 @@ from .characters import Character, CharactersResponse
 # Stat Definitions
 from .stats import StatDefinition
 
+# Kyrotech
+from .kyrotech import CharacterKyrotechResult
+
 __all__ = [
     # Enums
+    "CombatType",
     "GACFormat",
     "GACLeague",
     # Units
@@ -169,4 +173,6 @@ __all__ = [
     "CharactersResponse",
     # Stat Definitions
     "StatDefinition",
+    # Kyrotech
+    "CharacterKyrotechResult",
 ]

@@ -9,6 +9,7 @@ from swgoh_helper.kyrotech_analyzer import (
     MAX_GEAR_TIER,
 )
 from swgoh_helper.models import (
+    CharacterKyrotechResult,
     GearPiece,
     GearIngredient,
     GearTier,
@@ -643,6 +644,245 @@ class TestPartialEquipmentIntegration(unittest.TestCase):
             f"G8 unequipped gear should be counted. "
             f"Result: {result}",
         )
+
+
+class TestAnalyzeAllCharacters(unittest.TestCase):
+    """Test cases for analyzing all characters including unowned."""
+
+    def setUp(self):
+        """Set up test fixtures."""
+        self.gear_lookup = {
+            "172Salvage": GearPiece(
+                base_id="172Salvage",
+                name="Kyro Salvage",
+                tier=7,
+                mark="Mk VII",
+                required_level=1,
+                cost=0,
+                image="",
+                url="",
+                recipes=[],
+                ingredients=[],
+                stats={},
+            ),
+            "173Salvage": GearPiece(
+                base_id="173Salvage",
+                name="Kyro Computer",
+                tier=9,
+                mark="Mk IX",
+                required_level=1,
+                cost=0,
+                image="",
+                url="",
+                recipes=[],
+                ingredients=[],
+                stats={},
+            ),
+            "172": GearPiece(
+                base_id="172",
+                name="Kyro Gear",
+                tier=7,
+                mark="Mk VII",
+                required_level=1,
+                cost=10000,
+                image="",
+                url="",
+                recipes=[],
+                ingredients=[
+                    GearIngredient(amount=50, gear="172Salvage"),
+                    GearIngredient(amount=50, gear="173Salvage"),
+                ],
+                stats={},
+            ),
+        }
+
+        self.kyrotech_analyzer = KyrotechAnalyzer(self.gear_lookup)
+        self.roster_analyzer = RosterAnalyzer(self.kyrotech_analyzer)
+
+        # Create test units
+        self.owned_unit = Unit(
+            name="Owned Character",
+            base_id="OWNED_CHAR",
+            url="",
+            image="",
+            power=10000,
+            description="Test",
+            combat_type=1,
+            gear_levels=[
+                GearTier(tier=8, gear=["172"]),
+                GearTier(tier=9, gear=["172"]),
+            ],
+            alignment=1,
+            categories=["Rebel"],
+            ability_classes=[],
+            role="Attacker",
+            activate_shard_count=10,
+            is_capital_ship=False,
+            is_galactic_legend=False,
+            made_available_on="2020-01-01",
+            crew_base_ids=[],
+            omicron_ability_ids=[],
+            zeta_ability_ids=[],
+        )
+
+        self.unowned_unit = Unit(
+            name="Unowned Character",
+            base_id="UNOWNED_CHAR",
+            url="",
+            image="",
+            power=5000,
+            description="Test",
+            combat_type=1,
+            gear_levels=[
+                GearTier(tier=8, gear=["172"]),
+                GearTier(tier=9, gear=["172"]),
+                GearTier(tier=10, gear=["172"]),
+            ],
+            alignment=2,
+            categories=["Empire"],
+            ability_classes=[],
+            role="Tank",
+            activate_shard_count=10,
+            is_capital_ship=False,
+            is_galactic_legend=False,
+            made_available_on="2020-01-01",
+            crew_base_ids=[],
+            omicron_ability_ids=[],
+            zeta_ability_ids=[],
+        )
+
+        self.ship_unit = Unit(
+            name="Test Ship",
+            base_id="SHIP",
+            url="",
+            image="",
+            power=3000,
+            description="Test Ship",
+            combat_type=2,  # Ship
+            gear_levels=[],
+            alignment=1,
+            categories=["Rebel"],
+            ability_classes=[],
+            role="Attacker",
+            activate_shard_count=10,
+            is_capital_ship=False,
+            is_galactic_legend=False,
+            made_available_on="2020-01-01",
+            crew_base_ids=[],
+            omicron_ability_ids=[],
+            zeta_ability_ids=[],
+        )
+
+        self.units_by_id = {
+            "OWNED_CHAR": self.owned_unit,
+            "UNOWNED_CHAR": self.unowned_unit,
+            "SHIP": self.ship_unit,
+        }
+
+        # Player owns only OWNED_CHAR
+        self.player_units = [
+            PlayerUnit(
+                data=UnitData(
+                    base_id="OWNED_CHAR",
+                    name="Owned Character",
+                    gear_level=8,
+                    level=85,
+                    power=10000,
+                    rarity=7,
+                    gear=[GearSlot(slot=0, is_obtained=False, base_id="172")],
+                    url="",
+                    stats={},
+                    combat_type=1,
+                    has_ultimate=False,
+                    is_galactic_legend=False,
+                )
+            )
+        ]
+
+    def test_analyze_all_characters_includes_both_owned_and_unowned(self):
+        """Test that analyze_all_characters returns both owned and unowned."""
+        results = self.roster_analyzer.analyze_all_characters(
+            self.player_units, self.units_by_id
+        )
+
+        # Should have 2 results (owned and unowned, no ship)
+        self.assertEqual(len(results), 2)
+
+        owned_results = [r for r in results if r.is_owned]
+        unowned_results = [r for r in results if not r.is_owned]
+
+        self.assertEqual(len(owned_results), 1)
+        self.assertEqual(len(unowned_results), 1)
+
+        # Verify owned character
+        owned = owned_results[0]
+        self.assertEqual(owned.name, "Owned Character")
+        self.assertEqual(owned.gear_level, 8)
+        self.assertTrue(owned.is_owned)
+
+        # Verify unowned character
+        unowned = unowned_results[0]
+        self.assertEqual(unowned.name, "Unowned Character")
+        self.assertEqual(unowned.gear_level, 0)  # Not owned
+        self.assertFalse(unowned.is_owned)
+
+    def test_analyze_all_characters_excludes_ships(self):
+        """Test that ships are excluded from analysis."""
+        results = self.roster_analyzer.analyze_all_characters(
+            self.player_units, self.units_by_id
+        )
+
+        ship_results = [r for r in results if r.base_id == "SHIP"]
+        self.assertEqual(len(ship_results), 0)
+
+    def test_analyze_all_characters_only_owned(self):
+        """Test filtering to only owned characters."""
+        results = self.roster_analyzer.analyze_all_characters(
+            self.player_units,
+            self.units_by_id,
+            include_owned=True,
+            include_unowned=False,
+        )
+
+        self.assertEqual(len(results), 1)
+        self.assertTrue(results[0].is_owned)
+
+    def test_analyze_all_characters_only_unowned(self):
+        """Test filtering to only unowned characters."""
+        results = self.roster_analyzer.analyze_all_characters(
+            self.player_units,
+            self.units_by_id,
+            include_owned=False,
+            include_unowned=True,
+        )
+
+        self.assertEqual(len(results), 1)
+        self.assertFalse(results[0].is_owned)
+
+    def test_analyze_faction_all_characters_filters_by_faction(self):
+        """Test filtering by faction includes both owned and unowned in faction."""
+        results = self.roster_analyzer.analyze_faction_all_characters(
+            self.player_units, self.units_by_id, "Rebel"
+        )
+
+        # Only owned (Rebel) should be included, not unowned (Empire)
+        self.assertEqual(len(results), 1)
+        self.assertEqual(results[0].name, "Owned Character")
+
+    def test_unowned_character_calculates_from_g1(self):
+        """Test that unowned characters calculate kyrotech from G1."""
+        results = self.roster_analyzer.analyze_all_characters(
+            [], self.units_by_id, include_owned=False, include_unowned=True
+        )
+
+        # Find our test unowned character
+        unowned = [r for r in results if r.base_id == "UNOWNED_CHAR"][0]
+
+        # Unowned Character has 3 tiers with gear 172: G8, G9, G10
+        # 3 * 50 = 150 of each salvage type
+        self.assertEqual(unowned.kyrotech_needs.get("172Salvage", 0), 150)
+        self.assertEqual(unowned.kyrotech_needs.get("173Salvage", 0), 150)
+        self.assertEqual(unowned.total_kyrotech, 300)
 
 
 if __name__ == "__main__":

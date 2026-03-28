@@ -7,7 +7,11 @@ from collections import defaultdict
 from typing import Optional
 
 from .data_access import SwgohDataService
-from .kyrotech_analyzer import KyrotechAnalyzer, RosterAnalyzer, KYROTECH_SALVAGE_IDS
+from .kyrotech_analyzer import (
+    KyrotechAnalyzer,
+    RosterAnalyzer,
+    KYROTECH_SALVAGE_IDS,
+)
 from .results_presenter import ResultsPresenter
 from .rote_coverage import (
     build_coverage_matrix,
@@ -34,8 +38,13 @@ class KyrotechAnalysisApp:
         self.service = SwgohDataService(api_key)
         self.presenter = ResultsPresenter()
 
-    def analyze_player(self, ally_code: str) -> None:
-        """Analyze a player's roster for kyrotech requirements."""
+    def analyze_player(self, ally_code: str, include_unowned: bool = False) -> None:
+        """Analyze a player's roster for kyrotech requirements.
+
+        Args:
+            ally_code: Player's ally code
+            include_unowned: Whether to include characters the player doesn't own
+        """
         try:
             units_data, gear_data, player_data = self._fetch_game_data(ally_code)
 
@@ -43,9 +52,15 @@ class KyrotechAnalysisApp:
             roster_analyzer = RosterAnalyzer(kyrotech_analyzer)
 
             units_by_id = roster_analyzer.build_units_lookup(units_data.data)
-            results = roster_analyzer.analyze_roster(player_data.units, units_by_id)
 
-            self.presenter.display_results(results)
+            if include_unowned:
+                results = roster_analyzer.analyze_all_characters(
+                    player_data.units, units_by_id
+                )
+                self.presenter.display_all_results(results)
+            else:
+                results = roster_analyzer.analyze_roster(player_data.units, units_by_id)
+                self.presenter.display_results(results)
 
         except requests.exceptions.RequestException as e:
             self._handle_request_error(e)
@@ -81,6 +96,72 @@ class KyrotechAnalysisApp:
                         salvage_name = KYROTECH_SALVAGE_IDS.get(salvage_id, salvage_id)
                         print(f"  - {salvage_name}: {count}")
                     print()
+            else:
+                print(f"\nNo {faction} characters found that need kyrotech.")
+
+        except requests.exceptions.RequestException as e:
+            self._handle_request_error(e)
+        except Exception as e:
+            self._handle_general_error(e)
+
+    def find_all_faction_kyrotech(
+        self,
+        ally_code: str,
+        faction: str,
+        include_unowned: bool = True,
+    ) -> None:
+        """Find all characters with kyrotech needs for a faction, including unowned.
+
+        Args:
+            ally_code: Player's ally code
+            faction: The faction to filter by (e.g., "Empire", "Rebel", "Sith")
+            include_unowned: Whether to include characters the player doesn't own
+        """
+        try:
+            units_data, gear_data, player_data = self._fetch_game_data(ally_code)
+
+            kyrotech_analyzer = KyrotechAnalyzer(gear_data)
+            roster_analyzer = RosterAnalyzer(kyrotech_analyzer)
+
+            units_by_id = roster_analyzer.build_units_lookup(units_data.data)
+            results = roster_analyzer.analyze_faction_all_characters(
+                player_data.units,
+                units_by_id,
+                faction,
+                include_owned=True,
+                include_unowned=include_unowned,
+            )
+
+            if results:
+                owned = [r for r in results if r.is_owned]
+                unowned = [r for r in results if not r.is_owned]
+
+                print(f"\n{'='*60}")
+                print(f"{faction} Characters by Kyrotech Needs")
+                print(f"{'='*60}")
+
+                if owned:
+                    print("\n--- OWNED CHARACTERS ---")
+                    for result in owned:
+                        gear_str = f"G{result.gear_level}"
+                        print(
+                            f"{result.name} ({gear_str}): {result.total_kyrotech} total"
+                        )
+                        for salvage_id, count in result.kyrotech_needs.items():
+                            salvage_name = KYROTECH_SALVAGE_IDS.get(
+                                salvage_id, salvage_id
+                            )
+                            print(f"  - {salvage_name}: {count}")
+
+                if unowned:
+                    print("\n--- NOT OWNED (Full G1-G13) ---")
+                    for result in unowned:
+                        print(f"{result.name}: {result.total_kyrotech} total")
+                        for salvage_id, count in result.kyrotech_needs.items():
+                            salvage_name = KYROTECH_SALVAGE_IDS.get(
+                                salvage_id, salvage_id
+                            )
+                            print(f"  - {salvage_name}: {count}")
             else:
                 print(f"\nNo {faction} characters found that need kyrotech.")
 
@@ -498,9 +579,12 @@ def print_usage():
 def run_kyrotech():
     """Entry point for kyrotech CLI command."""
     if len(sys.argv) < 2:
-        print("Usage: kyrotech <ally_code> [--faction FACTION_NAME]")
+        print(
+            "Usage: kyrotech <ally_code> [--faction FACTION_NAME] [--include-unowned]"
+        )
         print("Example: kyrotech 123-456-789")
         print("         kyrotech 123-456-789 --faction Empire")
+        print("         kyrotech 123-456-789 --include-unowned")
         sys.exit(1)
 
     if not SWGOH_API_KEY:
@@ -510,6 +594,7 @@ def run_kyrotech():
 
     ally_code = sys.argv[1]
     faction = None
+    include_unowned = "--include-unowned" in sys.argv
 
     for i, arg in enumerate(sys.argv[2:], start=2):
         if arg == "--faction" and i + 1 < len(sys.argv):
@@ -518,9 +603,9 @@ def run_kyrotech():
 
     app = KyrotechAnalysisApp(SWGOH_API_KEY)
     if faction:
-        app.find_top_faction_kyrotech(ally_code, faction)
+        app.find_all_faction_kyrotech(ally_code, faction, include_unowned)
     else:
-        app.analyze_player(ally_code)
+        app.analyze_player(ally_code, include_unowned)
 
 
 def run_rote_platoon():
