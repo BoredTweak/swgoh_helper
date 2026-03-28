@@ -81,6 +81,18 @@ from .rote import (
     UnitProgressStatus,
 )
 
+# Abilities
+from .abilities import Ability, AbilitiesResponse
+
+# Ships
+from .ships import Ship, ShipsResponse
+
+# Characters
+from .characters import Character, CharactersResponse
+
+# Stat Definitions
+from .stats import StatDefinition
+
 __all__ = [
     # Enums
     "GACFormat",
@@ -146,4 +158,15 @@ __all__ = [
     "BonusZoneReadiness",
     "PrereqStatus",
     "UnitProgressStatus",
+    # Abilities
+    "Ability",
+    "AbilitiesResponse",
+    # Ships
+    "Ship",
+    "ShipsResponse",
+    # Characters
+    "Character",
+    "CharactersResponse",
+    # Stat Definitions
+    "StatDefinition",
 ]

@@ -8,7 +8,6 @@ Builds a coverage matrix showing how many players have each unit at each relic t
 import json
 from pathlib import Path
 from typing import Dict, List, Optional, Tuple
-from collections import defaultdict
 
 from .models import PlayerResponse, Unit, UnitsResponse
 from .models.rote import (

@@ -5,17 +5,15 @@ Analyzes platoon coverage to identify gaps where the guild lacks sufficient
 player coverage for specific unit requirements.
 """
 
-from typing import Dict, List
+from typing import List
 
 from .models.rote import (
-    RotePath,
     SimpleRoteRequirements,
     UnitRequirement,
     CoverageMatrix,
     GapSeverity,
     PlatoonGap,
 )
-from .rote_coverage import RoteConfig
 
 
 class GapAnalyzer:

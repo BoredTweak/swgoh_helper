@@ -6,7 +6,7 @@ import requests
 from collections import defaultdict
 from typing import Optional
 
-from .swgoh_gg_client import SwgohGGClient
+from .data_access import SwgohDataService
 from .kyrotech_analyzer import KyrotechAnalyzer, RosterAnalyzer, KYROTECH_SALVAGE_IDS
 from .results_presenter import ResultsPresenter
 from .rote_coverage import (
@@ -31,7 +31,7 @@ class KyrotechAnalysisApp:
     """Main application orchestrator for kyrotech analysis."""
 
     def __init__(self, api_key: str):
-        self.client = SwgohGGClient(api_key)
+        self.service = SwgohDataService(api_key)
         self.presenter = ResultsPresenter()
 
     def analyze_player(self, ally_code: str) -> None:
@@ -91,13 +91,13 @@ class KyrotechAnalysisApp:
 
     def _fetch_game_data(self, ally_code: str):
         print("Loading game units data...")
-        units_data = self.client.get_units()
+        units_data = self.service.get_all_units()
 
         print("Loading gear recipe data...")
-        gear_data = self.client.get_gear_recipes()
+        gear_data = self.service.get_all_gear()
 
         print(f"Fetching player data for ally code: {ally_code}...")
-        player_data = self.client.get_player_units(ally_code)
+        player_data = self.service.get_player(ally_code)
 
         return units_data, gear_data, player_data
 
@@ -119,7 +119,7 @@ class RotePlatoonApp:
     """Application for analyzing Rise of the Empire Territory Battle platoon requirements."""
 
     def __init__(self, api_key: str):
-        self.client = SwgohGGClient(api_key)
+        self.service = SwgohDataService(api_key)
 
     def analyze_guild(
         self,
@@ -131,7 +131,7 @@ class RotePlatoonApp:
         """Fetch guild information and analyze platoon coverage."""
         try:
             guild_id, guild_name, member_ally_codes = (
-                self.client.get_guild_from_ally_code(ally_code)
+                self.service.get_guild_from_ally_code(ally_code)
             )
 
             print(f"\n{'='*60}")
@@ -142,12 +142,12 @@ class RotePlatoonApp:
 
             if refresh:
                 print("\nInvalidating player caches (--refresh specified)...")
-                self.client.invalidate_player_caches(member_ally_codes)
+                self.service.invalidate_player_caches(member_ally_codes)
 
             print("\nLoading unit metadata...")
-            units_data = self.client.get_units()
+            units_data = self.service.get_all_units()
 
-            rosters = self.client.get_guild_rosters(
+            rosters = self.service.get_guild_rosters(
                 member_ally_codes, delay_seconds=1.0
             )
 
@@ -245,7 +245,7 @@ class RotePlatoonApp:
 
         print(f"\n{'='*60}")
         print(f"Guild: {matrix.guild_name} | Members: {matrix.member_count}")
-        print(f"\nROTE PLATOON COVERAGE SUMMARY")
+        print("\nROTE PLATOON COVERAGE SUMMARY")
         print(f"{'='*60}")
 
         # Coverage by path
@@ -291,7 +291,7 @@ class RotePlatoonApp:
                 unfilled_by_tier[gap.min_relic][gap.unit_name] += gap.slots_unfillable
 
         if unfilled_by_tier:
-            print(f"\nUnfillable platoon slots")
+            print("\nUnfillable platoon slots")
             print("-" * 40)
 
             for relic in sorted(unfilled_by_tier.keys()):
@@ -315,7 +315,7 @@ class RotePlatoonApp:
 
         # Critical gaps
         critical_gaps = gap_analyzer.get_critical_gaps()
-        print(f"\nCritical gaps")
+        print("\nCritical gaps")
         print("-" * 40)
 
         if not critical_gaps:
@@ -353,7 +353,7 @@ class RotePlatoonApp:
         rare_units = bottleneck_analyzer.identify_unicorn_units()
         available_rare = [u for u in rare_units if u.owner_count > 0]
 
-        print(f"\n\nLimited availability units")
+        print("\n\nLimited availability units")
         print("-" * 40)
 
         if not available_rare:
@@ -399,7 +399,7 @@ class RotePlatoonApp:
             max_recommendations=15
         )
 
-        print(f"\n\nFarming recommendations (closest to gaps)")
+        print("\n\nFarming recommendations (closest to gaps)")
         print("-" * 40)
 
         if not recommendations:
@@ -459,7 +459,7 @@ class RotePlatoonApp:
             max_players_per_unit=MAX_PLAYERS_PER_UNIT
         )
 
-        print(f"\n\nFarming recommendations by territory")
+        print("\n\nFarming recommendations by territory")
         print("-" * 40)
 
         if not recommendations:

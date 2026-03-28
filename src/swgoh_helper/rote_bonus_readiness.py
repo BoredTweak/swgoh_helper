@@ -22,7 +22,9 @@ Distance scoring uses the farming recommendations formula:
 import json
 import sys
 from pathlib import Path
-from typing import Dict, List, Set, Tuple
+from typing import Dict, List, Set
+
+from pydantic import BaseModel
 
 from swgoh_helper.constants import (
     ZEFFO_UNITS,
@@ -42,7 +44,6 @@ from swgoh_helper.constants import (
 )
 from swgoh_helper.models import PlayerResponse
 from swgoh_helper.models.rote import (
-    PlayerUnitStatus,
     PlayerDistance,
     BonusZoneReadiness,
 )
@@ -588,7 +589,7 @@ def print_readiness_report(readiness: BonusZoneReadiness) -> None:
             print(f"    - {name}")
 
     if readiness.near_qualifying:
-        print(f"\n  Near-Qualifying Players (sorted by distance, closest first):")
+        print("\n  Near-Qualifying Players (sorted by distance, closest first):")
         # Show top 15 closest
         for player in readiness.near_qualifying[:15]:
             print(
@@ -849,7 +850,7 @@ class BonusReadinessApp:
         zeffo_gap = max(0, zeffo.threshold - zeffo.qualifying_count)
         mandalore_gap = max(0, mandalore.threshold - mandalore.qualifying_count)
 
-        print(f"\n  By Qualifying Count:")
+        print("\n  By Qualifying Count:")
         print(
             f"    Zeffo:     {zeffo.qualifying_count}/{zeffo.threshold} = {zeffo_pct:.1f}% (need {zeffo_gap} more)"
         )
@@ -857,13 +858,13 @@ class BonusReadinessApp:
             f"    Mandalore: {mandalore.qualifying_count}/{mandalore.threshold} = {mandalore_pct:.1f}% (need {mandalore_gap} more)"
         )
 
-        print(f"\n  By Farmable Players (own all required units):")
+        print("\n  By Farmable Players (own all required units):")
         print(f"    Zeffo:     {zeffo.farmable_count} farmable (need {zeffo_gap})")
         print(
             f"    Mandalore: {mandalore.farmable_count} farmable (need {mandalore_gap})"
         )
 
-        print(f"\n  By Distance to Fill Gap (farming effort for closest N players):")
+        print("\n  By Distance to Fill Gap (farming effort for closest N players):")
         zeffo_actual = min(zeffo_gap, zeffo.farmable_count)
         mandalore_actual = min(mandalore_gap, mandalore.farmable_count)
         print(
@@ -879,27 +880,27 @@ class BonusReadinessApp:
 
         # Determine winner based on distance (lower is better)
         if zeffo_blocked and not mandalore_blocked:
-            print(f"\n  >>> Guild is CLOSER to unlocking MANDALORE <<<")
+            print("\n  >>> Guild is CLOSER to unlocking MANDALORE <<<")
             print(
                 f"      (Zeffo blocked: only {zeffo.farmable_count} farmable but need {zeffo_gap})"
             )
         elif mandalore_blocked and not zeffo_blocked:
-            print(f"\n  >>> Guild is CLOSER to unlocking ZEFFO <<<")
+            print("\n  >>> Guild is CLOSER to unlocking ZEFFO <<<")
             print(
                 f"      (Mandalore blocked: only {mandalore.farmable_count} farmable but need {mandalore_gap})"
             )
         elif zeffo.distance_to_fill_gap < mandalore.distance_to_fill_gap:
-            print(f"\n  >>> Guild is CLOSER to unlocking ZEFFO <<<")
+            print("\n  >>> Guild is CLOSER to unlocking ZEFFO <<<")
             print(
                 f"      (Lower farming distance: {zeffo.distance_to_fill_gap:.1f} vs {mandalore.distance_to_fill_gap:.1f})"
             )
         elif mandalore.distance_to_fill_gap < zeffo.distance_to_fill_gap:
-            print(f"\n  >>> Guild is CLOSER to unlocking MANDALORE <<<")
+            print("\n  >>> Guild is CLOSER to unlocking MANDALORE <<<")
             print(
                 f"      (Lower farming distance: {mandalore.distance_to_fill_gap:.1f} vs {zeffo.distance_to_fill_gap:.1f})"
             )
         else:
-            print(f"\n  >>> Guild is EQUALLY close to both zones <<<")
+            print("\n  >>> Guild is EQUALLY close to both zones <<<")
 
         print()
 
