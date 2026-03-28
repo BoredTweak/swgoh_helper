@@ -19,11 +19,11 @@ from .rote_coverage import (
     CoverageAnalyzer,
     RoteConfig,
 )
-from .rote_models import RotePath, SimpleRoteRequirements
+from .rote_models import SimpleRoteRequirements
 from .rote_gap_analyzer import GapAnalyzer
 from .rote_bottleneck_analyzer import BottleneckAnalyzer
-from .rote_proximity_analyzer import ProximityAnalyzer, ProgressStage
-from .constants import MAX_PLAYERS_PER_UNIT
+from .rote_proximity_analyzer import ProximityAnalyzer
+from .rote_presenter import RotePresenter
 
 
 dotenv.load_dotenv()
@@ -264,13 +264,17 @@ class RotePlatoonApp:
             bottleneck_analyzer = BottleneckAnalyzer(coverage_matrix, requirements)
             proximity_analyzer = ProximityAnalyzer(coverage_matrix, requirements)
 
-            self._display_rote_results(
-                analyzer,
-                coverage_matrix,
-                gap_analyzer,
-                bottleneck_analyzer,
-                proximity_analyzer,
-                by_territory=by_territory,
+            presenter = RotePresenter()
+            print(
+                "\n"
+                + presenter.format_results(
+                    analyzer,
+                    coverage_matrix,
+                    gap_analyzer,
+                    bottleneck_analyzer,
+                    proximity_analyzer,
+                    by_territory=by_territory,
+                )
             )
 
         except ValueError as e:
@@ -311,243 +315,6 @@ class RotePlatoonApp:
             last_updated=requirements.last_updated,
             requirements=filtered_reqs,
         )
-
-    def _display_rote_results(
-        self,
-        analyzer: CoverageAnalyzer,
-        matrix,
-        gap_analyzer,
-        bottleneck_analyzer,
-        proximity_analyzer=None,
-        by_territory: bool = False,
-    ) -> None:
-        """Display complete ROTE platoon analysis results."""
-        summary = analyzer.get_coverage_summary_by_territory()
-
-        print(f"\n{'='*60}")
-        print(f"Guild: {matrix.guild_name} | Members: {matrix.member_count}")
-        print("\nROTE PLATOON COVERAGE SUMMARY")
-        print(f"{'='*60}")
-
-        # Coverage by path
-        for path in [RotePath.DARK_SIDE, RotePath.NEUTRAL, RotePath.LIGHT_SIDE]:
-            path_label = path.value.replace("_", " ").title()
-            print(f"\n{path_label}:")
-            print("-" * 40)
-
-            path_territories = [
-                (key, data) for key, data in summary.items() if key[0] == path
-            ]
-
-            if not path_territories:
-                print("  No requirements found.")
-                continue
-
-            for (_, territory), data in sorted(
-                path_territories,
-                key=lambda x: RoteConfig.TERRITORY_PHASE.get(x[0][1], "99"),
-            ):
-                total = data["total_slots"]
-                covered = data["covered_slots"]
-                pct = (covered / total * 100) if total > 0 else 0
-                phase = RoteConfig.TERRITORY_PHASE.get(territory, "?")
-
-                if pct == 100:
-                    status = "[OK]"
-                elif pct >= 80:
-                    status = "[!!]"
-                else:
-                    status = "[XX]"
-
-                print(
-                    f"  {status} P{phase} {territory}: {covered}/{total} slots ({pct:.0f}%)"
-                )
-
-        all_gaps = gap_analyzer.get_all_gaps()
-        unfilled_by_tier: dict[int, dict[str, int]] = defaultdict(
-            lambda: defaultdict(int)
-        )
-        for gap in all_gaps:
-            if gap.slots_unfillable > 0:
-                unfilled_by_tier[gap.min_relic][gap.unit_name] += gap.slots_unfillable
-
-        if unfilled_by_tier:
-            print("\nUnfillable platoon slots")
-            print("-" * 40)
-
-            for relic in sorted(unfilled_by_tier.keys()):
-                units = unfilled_by_tier[relic]
-                if relic <= 5:
-                    phase_label = "Tier 1 Planets"
-                elif relic == 6:
-                    phase_label = "Tier 2 Planets"
-                else:
-                    phase_label = "Tier 3 Planets"
-
-                print(f"\n{phase_label} – R{relic}:")
-                for unit_name in sorted(units.keys()):
-                    count = units[unit_name]
-                    print(f"  {unit_name} – R{relic} x{count}")
-
-        # Analysis section
-        print(f"\n{'='*60}")
-        print("ANALYSIS")
-        print(f"{'='*60}")
-
-        # Critical gaps
-        critical_gaps = gap_analyzer.get_critical_gaps()
-        print("\nCritical gaps")
-        print("-" * 40)
-
-        if not critical_gaps:
-            print("\n[OK] No critical gaps detected!")
-        else:
-            gaps_by_territory = {}
-            for gap in critical_gaps:
-                key = (gap.path, gap.territory)
-                if key not in gaps_by_territory:
-                    gaps_by_territory[key] = []
-                gaps_by_territory[key].append(gap)
-
-            for (path, territory), gaps in sorted(
-                gaps_by_territory.items(),
-                key=lambda x: (
-                    x[0][0].value,
-                    RoteConfig.TERRITORY_PHASE.get(x[0][1], "99"),
-                ),
-            ):
-                phase = RoteConfig.TERRITORY_PHASE.get(territory, "?")
-                path_label = path.value.replace("_", " ").title()
-                print(f"\n{path_label} - P{phase} {territory}:")
-
-                for gap in sorted(
-                    gaps, key=lambda g: (g.players_available, g.unit_name)
-                ):
-                    owners = ", ".join(gap.player_names) if gap.player_names else ""
-                    owners_suffix = f" ({owners})" if owners else ""
-                    print(
-                        f"  - {gap.unit_name} R{gap.min_relic}: "
-                        f"{gap.players_available}/{gap.slots_needed} players{owners_suffix}"
-                    )
-
-        # Limited availability units
-        rare_units = bottleneck_analyzer.identify_unicorn_units()
-        available_rare = [u for u in rare_units if u.owner_count > 0]
-
-        print("\n\nLimited availability units")
-        print("-" * 40)
-
-        if not available_rare:
-            print("\n[OK] No limited availability units!")
-        else:
-            sole_owner = [u for u in available_rare if u.owner_count == 1]
-            two_owners = [u for u in available_rare if u.owner_count == 2]
-            three_owners = [u for u in available_rare if u.owner_count == 3]
-
-            if sole_owner:
-                units_str = "\n  ".join(
-                    f"{u.unit_name} R{u.min_relic} -> {u.owner_names[0]}"
-                    for u in sole_owner
-                )
-                print(f"\n1 owner ({len(sole_owner)}):\n  {units_str}")
-
-            if two_owners:
-                units_str = "\n  ".join(
-                    f"{u.unit_name} R{u.min_relic} -> {', '.join(u.owner_names[:2])}"
-                    for u in two_owners
-                )
-                print(f"\n2 owners ({len(two_owners)}):\n  {units_str}")
-
-            if three_owners:
-                units_str = "\n  ".join(
-                    f"{u.unit_name} R{u.min_relic} -> {', '.join(u.owner_names[:3])}"
-                    for u in three_owners
-                )
-                print(f"\n3 owners ({len(three_owners)}):\n  {units_str}")
-
-        # Farming recommendations (closest players to gaps)
-        if proximity_analyzer:
-            if by_territory:
-                self._display_farming_recommendations_by_territory(proximity_analyzer)
-            else:
-                self._display_farming_recommendations(proximity_analyzer)
-
-        print()
-
-    def _display_farming_recommendations(self, proximity_analyzer) -> None:
-        """Display farming recommendations for platoon gaps."""
-        recommendations = proximity_analyzer.get_farming_recommendations(
-            max_recommendations=15
-        )
-
-        print("\n\nFarming recommendations (closest to gaps)")
-        print("-" * 40)
-
-        if not recommendations:
-            print("\n[OK] No actionable farming recommendations!")
-            return
-
-        for unit_name, relic_req, closest_players in recommendations:
-            print(f"\n{unit_name} {relic_req}:")
-
-            # Group players by distance score to handle ties
-            # Show up to 3 distinct distance levels, but include ALL tied players at each level
-            distance_groups: list[list] = []
-            current_group: list = []
-            current_score: float | None = None
-
-            for p in closest_players:
-                if current_score is None or p.distance_score == current_score:
-                    current_group.append(p)
-                    current_score = p.distance_score
-                else:
-                    if current_group:
-                        distance_groups.append(current_group)
-                    current_group = [p]
-                    current_score = p.distance_score
-
-            if current_group:
-                distance_groups.append(current_group)
-
-            # Display up to 3 distance groups
-            groups_to_show = distance_groups[:3]
-
-            for group in groups_to_show:
-                # All players in a group have the same distance, so use first to get label
-                first = group[0]
-
-                if first.stage == ProgressStage.STAR_GATED:
-                    label = f"needs {first.star_gap}★ first"
-                elif first.stage == ProgressStage.GEARING:
-                    label = f"needs G13 (+{first.gear_gap} gear)"
-                elif first.stage == ProgressStage.GEAR_13:
-                    label = "at G13, needs relic"
-                else:  # RELICED
-                    label = f"+{first.relic_gap}R needed"
-
-                # Collect player names
-                names = [p.player_name for p in group]
-                names_str = ", ".join(names)
-                count = len(names)
-
-                print(f"  - {label} ({count}): {names_str}")
-
-    def _display_farming_recommendations_by_territory(self, proximity_analyzer) -> None:
-        """Display farming recommendations grouped by territory/planet."""
-        from .rote_proximity_analyzer import format_territory_recommendations
-
-        recommendations = proximity_analyzer.get_farming_recommendations_by_territory(
-            max_players_per_unit=MAX_PLAYERS_PER_UNIT
-        )
-
-        print("\n\nFarming recommendations by territory")
-        print("-" * 40)
-
-        if not recommendations:
-            print("\n[OK] No actionable farming recommendations!")
-            return
-
-        print(format_territory_recommendations(recommendations))
 
 
 def print_usage():
