@@ -2,11 +2,18 @@
 Service layer for analyzing kyrotech gear requirements in SWGOH.
 """
 
-from typing import Dict, List, Tuple
+from typing import Dict, List, Optional, Tuple
 from collections import defaultdict
 
 from .constants import KYROTECH_SALVAGE_IDS, MAX_GEAR_TIER
-from .models import GearTier, GearPiece, Unit, PlayerUnit
+from .models import (
+    CharacterKyrotechResult,
+    CombatType,
+    GearPiece,
+    GearTier,
+    PlayerUnit,
+    Unit,
+)
 
 
 class KyrotechAnalyzer:
@@ -102,6 +109,9 @@ class KyrotechAnalyzer:
 class RosterAnalyzer:
     """Analyzes a player's roster to identify kyrotech requirements."""
 
+    # Starting gear tier for unowned character analysis (kyrotech starts at G9)
+    UNOWNED_START_GEAR = 1
+
     def __init__(self, kyrotech_analyzer: KyrotechAnalyzer):
         self.kyrotech_analyzer = kyrotech_analyzer
 
@@ -117,6 +127,162 @@ class RosterAnalyzer:
                 results.append(character_result)
 
         return sorted(results, key=lambda x: x[3], reverse=True)
+
+    def analyze_all_characters(
+        self,
+        player_units: List[PlayerUnit],
+        units_by_id: Dict[str, Unit],
+        include_owned: bool = True,
+        include_unowned: bool = True,
+    ) -> List[CharacterKyrotechResult]:
+        """Analyze kyrotech needs for all characters, including unowned ones.
+
+        Args:
+            player_units: List of player's units
+            units_by_id: Dictionary mapping base_id to Unit info
+            include_owned: Whether to include owned characters
+            include_unowned: Whether to include unowned characters
+
+        Returns:
+            List of CharacterKyrotechResult sorted by total kyrotech descending
+        """
+        results: List[CharacterKyrotechResult] = []
+        owned_ids = {pu.data.base_id for pu in player_units}
+
+        # Analyze owned characters
+        if include_owned:
+            for player_unit in player_units:
+                result = self._analyze_owned_character(player_unit, units_by_id)
+                if result:
+                    results.append(result)
+
+        # Analyze unowned characters
+        if include_unowned:
+            for base_id, unit_info in units_by_id.items():
+                if base_id in owned_ids:
+                    continue
+                # Skip ships
+                if unit_info.combat_type == CombatType.SHIP:
+                    continue
+                result = self._analyze_unowned_character(unit_info)
+                if result:
+                    results.append(result)
+
+        return sorted(results, key=lambda x: x.total_kyrotech, reverse=True)
+
+    def analyze_faction_all_characters(
+        self,
+        player_units: List[PlayerUnit],
+        units_by_id: Dict[str, Unit],
+        faction: str,
+        include_owned: bool = True,
+        include_unowned: bool = True,
+    ) -> List[CharacterKyrotechResult]:
+        """Analyze kyrotech needs for all characters in a faction, including unowned.
+
+        Args:
+            player_units: List of player's units
+            units_by_id: Dictionary mapping base_id to Unit info
+            faction: The faction to filter by (e.g., "Empire", "Rebel", "Sith")
+            include_owned: Whether to include owned characters
+            include_unowned: Whether to include unowned characters
+
+        Returns:
+            List of CharacterKyrotechResult sorted by total kyrotech descending
+        """
+        all_results = self.analyze_all_characters(
+            player_units, units_by_id, include_owned, include_unowned
+        )
+
+        # Filter by faction
+        faction_results = [
+            r
+            for r in all_results
+            if faction
+            in units_by_id.get(
+                r.base_id,
+                Unit(
+                    name="",
+                    base_id="",
+                    url="",
+                    image="",
+                    power=0,
+                    description="",
+                    combat_type=1,
+                    gear_levels=[],
+                    alignment=0,
+                    categories=[],
+                    ability_classes=[],
+                    role="",
+                    activate_shard_count=0,
+                    is_capital_ship=False,
+                    is_galactic_legend=False,
+                    made_available_on="",
+                    crew_base_ids=[],
+                    omicron_ability_ids=[],
+                    zeta_ability_ids=[],
+                ),
+            ).categories
+        ]
+
+        return faction_results
+
+    def _analyze_owned_character(
+        self, player_unit: PlayerUnit, units_by_id: Dict[str, Unit]
+    ) -> Optional[CharacterKyrotechResult]:
+        """Analyze an owned character for kyrotech needs."""
+        base_id = player_unit.data.base_id
+        current_gear = player_unit.data.gear_level
+
+        if current_gear >= MAX_GEAR_TIER or base_id not in units_by_id:
+            return None
+
+        unit_info = units_by_id[base_id]
+
+        # Skip ships
+        if unit_info.combat_type == CombatType.SHIP:
+            return None
+
+        equipped_gear = [
+            slot.base_id for slot in player_unit.data.gear if slot.is_obtained
+        ]
+        kyrotech_needs = self.kyrotech_analyzer.calculate_character_requirements(
+            unit_info.gear_levels, current_gear, equipped_gear
+        )
+
+        if not kyrotech_needs:
+            return None
+
+        total_kyrotech = sum(kyrotech_needs.values())
+        return CharacterKyrotechResult(
+            name=unit_info.name,
+            base_id=base_id,
+            gear_level=current_gear,
+            kyrotech_needs=kyrotech_needs,
+            total_kyrotech=total_kyrotech,
+            is_owned=True,
+        )
+
+    def _analyze_unowned_character(
+        self, unit_info: Unit
+    ) -> Optional[CharacterKyrotechResult]:
+        """Analyze an unowned character for kyrotech needs (from G1 to G13)."""
+        kyrotech_needs = self.kyrotech_analyzer.calculate_character_requirements(
+            unit_info.gear_levels, self.UNOWNED_START_GEAR, []
+        )
+
+        if not kyrotech_needs:
+            return None
+
+        total_kyrotech = sum(kyrotech_needs.values())
+        return CharacterKyrotechResult(
+            name=unit_info.name,
+            base_id=unit_info.base_id,
+            gear_level=0,  # Not owned, so gear level is 0
+            kyrotech_needs=kyrotech_needs,
+            total_kyrotech=total_kyrotech,
+            is_owned=False,
+        )
 
     def analyze_faction_kyrotech(
         self, player_units: List[PlayerUnit], units_by_id: Dict[str, Unit], faction: str

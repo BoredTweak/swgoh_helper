@@ -8,9 +8,8 @@ Builds a coverage matrix showing how many players have each unit at each relic t
 import json
 from pathlib import Path
 from typing import Dict, List, Optional, Tuple
-from collections import defaultdict
 
-from .models import PlayerResponse, Unit, UnitsResponse
+from .models import CombatType, PlayerResponse, Unit, UnitsResponse
 from .models.rote import (
     RotePath,
     SimpleRoteRequirements,
@@ -117,7 +116,7 @@ class CoverageMatrixBuilder:
                 continue
 
             # Ships use star level, characters use relic tier
-            if unit_meta.combat_type == 2:
+            if unit_meta.combat_type == CombatType.SHIP:
                 if unit_data.rarity < 7:
                     continue
                 effective_tier = unit_data.rarity
@@ -200,11 +199,11 @@ class PathEligibilityFilter:
     def filter_characters_only(
         units: Dict[str, UnitCoverage],
     ) -> Dict[str, UnitCoverage]:
-        """Filter to only include characters (combat_type=1), excluding ships."""
+        """Filter to only include characters, excluding ships."""
         return {
             unit_id: coverage
             for unit_id, coverage in units.items()
-            if coverage.combat_type == 1
+            if coverage.combat_type == CombatType.CHARACTER
         }
 
 

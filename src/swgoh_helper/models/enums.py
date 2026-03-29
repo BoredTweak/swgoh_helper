@@ -2,7 +2,14 @@
 Enums used across SWGOH data models.
 """
 
-from enum import Enum
+from enum import Enum, IntEnum
+
+
+class CombatType(IntEnum):
+    """Unit combat type from SWGOH.GG API."""
+
+    CHARACTER = 1
+    SHIP = 2
 
 
 class GACFormat(str, Enum):

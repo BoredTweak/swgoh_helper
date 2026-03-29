@@ -19,7 +19,17 @@ from .models import (
     GACHistoryResponse,
 )
 
-from .swgoh_gg_client import SwgohGGClient
+from .data_access import (
+    SwgohDataService,
+    BaseApiClient,
+    BaseRepository,
+    AbilitiesRepository,
+    GearRepository,
+    GuildsRepository,
+    PlayersRepository,
+    StatDefinitionsRepository,
+    UnitsRepository,
+)
 
 from .rote_proximity_analyzer import (
     ProximityAnalyzer,
@@ -29,8 +39,16 @@ from .rote_proximity_analyzer import (
 )
 
 __all__ = [
-    # Client
-    "SwgohGGClient",
+    # Data Access Layer
+    "SwgohDataService",
+    "BaseApiClient",
+    "BaseRepository",
+    "AbilitiesRepository",
+    "GearRepository",
+    "GuildsRepository",
+    "PlayersRepository",
+    "StatDefinitionsRepository",
+    "UnitsRepository",
     # Enums
     "GACFormat",
     "GACLeague",
