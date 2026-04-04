@@ -77,15 +77,15 @@ class RotePresenter:
     def _format_gaps(
         self, gap_analyzer: GapAnalyzer, bottleneck_analyzer: BottleneckAnalyzer
     ) -> list[str]:
-        """Format critical gaps and limited availability units."""
+        """Format all unfillable gaps and limited availability units."""
         lines = ["", "**Gaps**"]
 
-        critical_gaps = gap_analyzer.get_critical_gaps()
-        if not critical_gaps:
-            lines.append("✅ No critical gaps")
+        all_gaps = gap_analyzer.get_all_gaps()
+        if not all_gaps:
+            lines.append("✅ No gaps")
         else:
             gaps_by_territory = defaultdict(list)
-            for gap in critical_gaps:
+            for gap in all_gaps:
                 gaps_by_territory[(gap.path, gap.territory)].append(gap)
 
             for (path, territory), gaps in sorted(

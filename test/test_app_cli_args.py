@@ -53,3 +53,40 @@ def test_parse_rote_platoon_args_sanitizes_ignored_players(original_argv):
     options = _parse_rote_platoon_args(start_index=2)
 
     assert options["ignored_players"] == ["Alpha", "Beta"]
+
+
+def test_parse_rote_platoon_args_accepts_ignored_players_alias(original_argv):
+    """Both --ignore-players and --ignored-players should be accepted."""
+    import sys
+
+    sys.argv = [
+        "rote-platoon",
+        "123-456-789",
+        "--ignored-players",
+        "Alpha,Beta",
+    ]
+
+    options = _parse_rote_platoon_args(start_index=2)
+
+    assert options["ignored_players"] == ["Alpha", "Beta"]
+
+
+def test_parse_rote_platoon_args_consumes_multiple_ignore_tokens(original_argv):
+    """Ignore list should consume multiple tokens until the next option."""
+    import sys
+
+    sys.argv = [
+        "rote-platoon",
+        "123-456-789",
+        "--ignore-players",
+        "543568236,",
+        "695218412,",
+        "364763172",
+        "--output-format",
+        "gaps",
+    ]
+
+    options = _parse_rote_platoon_args(start_index=2)
+
+    assert options["ignored_players"] == ["543568236", "695218412", "364763172"]
+    assert options["output_format"] == "gaps"

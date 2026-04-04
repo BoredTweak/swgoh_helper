@@ -473,20 +473,46 @@ def _parse_rote_platoon_args(start_index: int) -> dict[str, object]:
     output_format_arg = None
     ignored_players: list[str] = []
 
-    for i, arg in enumerate(sys.argv[start_index:], start=start_index):
+    i = start_index
+    while i < len(sys.argv):
+        arg = sys.argv[i]
+
         if arg == "--max-phase" and i + 1 < len(sys.argv):
             max_phase = sys.argv[i + 1]
-        elif arg == "--refresh":
+            i += 2
+            continue
+
+        if arg == "--refresh":
             refresh = True
-        elif arg == "--output-format" and i + 1 < len(sys.argv):
+            i += 1
+            continue
+
+        if arg == "--output-format" and i + 1 < len(sys.argv):
             output_format_arg = sys.argv[i + 1].lower()
-        elif arg in {"--by-territory", "--show-owners"}:
+            i += 2
+            continue
+
+        if arg in {"--by-territory", "--show-owners"}:
             raise ValueError(f"{arg} has been retired. Use --output-format instead.")
-        elif arg == "--ignore-players" and i + 1 < len(sys.argv):
+
+        if arg in {"--ignore-players", "--ignored-players"}:
+            i += 1
+            ignored_chunks: list[str] = []
+            while i < len(sys.argv) and not sys.argv[i].startswith("--"):
+                ignored_chunks.append(sys.argv[i])
+                i += 1
+
+            ignored_text = " ".join(ignored_chunks)
             ignored_players = [
-                p.strip() for p in sys.argv[i + 1].split(",") if p.strip()
+                p.strip()
+                for p in ignored_text.replace(";", ",").split(",")
+                if p.strip()
             ]
-            print(f"Ignoring players: {', '.join(ignored_players)}")
+            if ignored_players:
+                print(f"Ignoring players: {', '.join(ignored_players)}")
+            continue
+
+        i += 1
 
     output_format = output_format_arg or "gaps"
 
