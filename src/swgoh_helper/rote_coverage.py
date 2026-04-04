@@ -88,18 +88,61 @@ class CoverageMatrixBuilder:
         rosters: List[PlayerResponse],
         guild_name: str,
         guild_id: str,
+        ignored_players: Optional[List[str]] = None,
     ) -> CoverageMatrix:
         """Build a complete coverage matrix from guild rosters."""
+        ignored_names, ignored_ally_codes = self._parse_ignored_players(ignored_players)
+        filtered_rosters = [
+            roster
+            for roster in rosters
+            if not self._is_ignored_roster(roster, ignored_names, ignored_ally_codes)
+        ]
+
         matrix = CoverageMatrix(
             guild_name=guild_name,
             guild_id=guild_id,
-            member_count=len(rosters),
+            member_count=len(filtered_rosters),
         )
 
-        for roster in rosters:
+        for roster in filtered_rosters:
             self._process_player_roster(roster, matrix)
 
         return matrix
+
+    def _parse_ignored_players(
+        self, ignored_players: Optional[List[str]]
+    ) -> tuple[set[str], set[int]]:
+        """Split ignored player tokens into normalized names and ally codes."""
+        names: set[str] = set()
+        ally_codes: set[int] = set()
+
+        if not ignored_players:
+            return names, ally_codes
+
+        for token in ignored_players:
+            cleaned = token.strip()
+            if not cleaned:
+                continue
+
+            compact = cleaned.replace("-", "")
+            if compact.isdigit() and len(compact) == 9:
+                ally_codes.add(int(compact))
+            else:
+                names.add(cleaned.casefold())
+
+        return names, ally_codes
+
+    def _is_ignored_roster(
+        self,
+        roster: PlayerResponse,
+        ignored_names: set[str],
+        ignored_ally_codes: set[int],
+    ) -> bool:
+        """Check if a roster should be excluded from coverage analysis."""
+        return (
+            roster.data.name.casefold() in ignored_names
+            or roster.data.ally_code in ignored_ally_codes
+        )
 
     def _process_player_roster(
         self, roster: PlayerResponse, matrix: CoverageMatrix
@@ -286,12 +329,46 @@ def build_coverage_matrix(
     units_data: UnitsResponse,
     guild_name: str,
     guild_id: str,
+    ignored_players: Optional[List[str]] = None,
 ) -> CoverageMatrix:
     """Build a coverage matrix from guild rosters."""
     builder = CoverageMatrixBuilder(units_data)
-    return builder.build_from_rosters(rosters, guild_name, guild_id)
+    return builder.build_from_rosters(
+        rosters, guild_name, guild_id, ignored_players=ignored_players
+    )
 
 
 def load_requirements(path: Optional[Path] = None) -> SimpleRoteRequirements:
     """Load ROTE platoon requirements from JSON."""
     return RoteRequirementsLoader.load(path)
+
+
+def filter_requirements_by_phase(
+    requirements: SimpleRoteRequirements, max_phase: str
+) -> SimpleRoteRequirements:
+    """Filter requirements to only include territories up to max_phase."""
+    base_phases = ["1", "2", "3", "4", "5", "6"]
+
+    try:
+        max_phase_idx = base_phases.index(max_phase)
+    except ValueError:
+        print(f"Warning: Unknown phase '{max_phase}', using all phases.")
+        return requirements
+
+    included_phases = set()
+    for i in range(max_phase_idx + 1):
+        phase = base_phases[i]
+        included_phases.add(phase)
+        included_phases.add(f"{phase}b")  # Include bonus planet for this phase
+
+    filtered_reqs = []
+    for req in requirements.requirements:
+        territory_phase = RoteConfig.TERRITORY_PHASE.get(req.territory, "99")
+        if territory_phase in included_phases:
+            filtered_reqs.append(req)
+
+    return SimpleRoteRequirements(
+        version=requirements.version,
+        last_updated=requirements.last_updated,
+        requirements=filtered_reqs,
+    )

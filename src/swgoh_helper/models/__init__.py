@@ -3,7 +3,7 @@ Pydantic models for SWGOH data schemas.
 
 This module re-exports all models for backward compatibility.
 Models are organized into submodules:
-- enums: GACFormat, GACLeague
+- enums: CombatType, GACFormat, GACLeague, RoteOutputFormat
 - units: Unit, GearTier, UnitsResponse
 - player: PlayerResponse, PlayerData, PlayerUnit, UnitData, etc.
 - gear: GearPiece, GearIngredient, GearRecipe, GearResponse
@@ -13,7 +13,13 @@ Models are organized into submodules:
 """
 
 # Enums
-from .enums import CombatType, GACFormat, GACLeague
+from .enums import (
+    CombatType,
+    GACFormat,
+    GACLeague,
+    RoteOutputFormat,
+    VALID_ROTE_OUTPUT_FORMATS,
+)
 
 # Units
 from .units import GearTier, Unit, UnitsResponse
@@ -101,6 +107,8 @@ __all__ = [
     "CombatType",
     "GACFormat",
     "GACLeague",
+    "RoteOutputFormat",
+    "VALID_ROTE_OUTPUT_FORMATS",
     # Units
     "GearTier",
     "Unit",

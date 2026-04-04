@@ -255,6 +255,27 @@ def test_coverage_matrix_get_coverage_summary(mock_units_response, mock_player_r
     assert summary[8] == 0  # 0 players at R8+
 
 
+def test_build_coverage_matrix_ignores_players_by_name_and_ally_code(
+    mock_units_response, mock_player_roster
+):
+    """Ignored players should be excluded from both units and member_count."""
+    second_player = mock_player_roster.model_copy(deep=True)
+    second_player.data.name = "OtherPlayer"
+    second_player.data.ally_code = 987654321
+
+    builder = CoverageMatrixBuilder(mock_units_response)
+
+    matrix = builder.build_from_rosters(
+        rosters=[mock_player_roster, second_player],
+        guild_name="Test Guild",
+        guild_id="test_guild_id",
+        ignored_players=[" testplayer1 ", "987-654-321"],
+    )
+
+    assert matrix.member_count == 0
+    assert matrix.get_count_at_relic("VADER", 7) == 0
+
+
 # ============================================================================
 # Tests: PathEligibilityFilter
 # ============================================================================

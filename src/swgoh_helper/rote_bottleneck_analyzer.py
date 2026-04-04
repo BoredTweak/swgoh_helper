@@ -29,24 +29,22 @@ class BottleneckAnalyzer:
 
     def identify_unicorn_units(self) -> List[UnicornUnit]:
         """Identify units with few owners at required relic. Sorted by owner count."""
-        unit_requirements: Dict[Tuple[str, int], Dict] = {}
+        unit_requirements: Dict[Tuple[str, int], Dict[str, int]] = {}
 
         for req in self.requirements.requirements:
             key = (req.unit_id, req.min_relic)
 
             if key not in unit_requirements:
-                unit_requirements[key] = {
-                    "territories": [],
-                    "total_slots": 0,
-                }
+                unit_requirements[key] = {}
 
-            unit_requirements[key]["territories"].append(req.territory)
-            unit_requirements[key]["total_slots"] += req.count
+            if req.territory not in unit_requirements[key]:
+                unit_requirements[key][req.territory] = 0
+            unit_requirements[key][req.territory] += req.count
 
         # Check each unique (unit_id, min_relic) combination
         unicorns = []
 
-        for (unit_id, min_relic), data in unit_requirements.items():
+        for (unit_id, min_relic), slots_per_territory in unit_requirements.items():
             players = self.matrix.get_players_at_relic(unit_id, min_relic)
             owner_count = len(players)
 
@@ -61,8 +59,7 @@ class BottleneckAnalyzer:
                         min_relic=min_relic,
                         owner_names=[p.player_name for p in players],
                         owner_count=owner_count,
-                        territories_needed=data["territories"],
-                        total_slots_needed=data["total_slots"],
+                        slots_per_territory=slots_per_territory,
                     )
                 )
 

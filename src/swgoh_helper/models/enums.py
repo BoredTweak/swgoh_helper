@@ -27,3 +27,20 @@ class GACLeague(str, Enum):
     CHROMIUM = "Chromium"
     AURODIUM = "Aurodium"
     KYBER = "Kyber"
+
+
+class RoteOutputFormat(str, Enum):
+    """Supported rote-platoon output formats.
+
+    Changes to this list must also be documented in README.md.
+    """
+
+    ALL = "all"
+    COVERAGE = "coverage"
+    GAPS = "gaps"
+    OWNERS = "owners"
+    FARMING = "farming"
+    FARMING_BY_TERRITORY = "farming-by-territory"
+
+
+VALID_ROTE_OUTPUT_FORMATS = {output_format.value for output_format in RoteOutputFormat}

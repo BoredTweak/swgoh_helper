@@ -54,21 +54,62 @@ Analyze guild coverage for Rise of the Empire Territory Battle platoon requireme
 uv run rote-platoon <ally_code>
 ```
 
+By default, this now prints only the `gaps` view.
+
+Choose a specific output format:
+
+```powershell
+uv run rote-platoon 123-456-789 --output-format gaps
+uv run rote-platoon 123-456-789 --output-format coverage
+uv run rote-platoon 123-456-789 --output-format owners
+uv run rote-platoon 123-456-789 --output-format farming
+uv run rote-platoon 123-456-789 --output-format farming-by-territory
+uv run rote-platoon 123-456-789 --output-format all
+```
+
 Optionally limit analysis to a specific phase:
 ```powershell
 uv run rote-platoon 123-456-789 --max-phase 4
 ```
 
+Show every qualifying owner for each platoon requirement, grouped by territory:
+```powershell
+uv run rote-platoon 123-456-789 --max-phase 4 --output-format owners
+```
+
 Valid phases: `1`, `2`, `3`, `3b`, `4`, `4b`, `5`, `5b`, `6`
 
-**Output includes:**
-- Coverage summary by territory (✅ 100%, ⚠️ 80%+, ❌ below 80%)
-- Unfillable platoon slots by relic tier
-- Critical gaps (units with fewer players than slots needed)
-- Limited availability units (only 1-3 players have them)
-- Farming recommendations (closest players to each gap)
+**Output formats:**
+- `gaps` (default): critical gaps + limited availability units
+- `coverage`: territory coverage summary
+- `owners`: qualifying owners for each requirement, grouped by territory
+- `farming`: farming recommendations grouped by unit
+- `farming-by-territory`: farming recommendations grouped by planet
+- `all`: coverage + gaps + farming
 
-See [Farming Recommendations](docs/farming_recommendations.md) for details on how proximity is calculated.
+**Optional flags:**
+- `--ignore-players` excludes players from analysis by name or ally code (supports `123456789` or `123-456-789`)
+
+**How farming recommendations work:**
+- Only units with unfillable platoon slots are included.
+- Candidates are guild members who own the unit but do not yet meet the relic requirement.
+- Recommendations are ranked by a distance score that combines:
+   - relic upgrade cost weights from `data/relic_costs.json`
+   - `+2.0` per gear level needed to reach G13
+   - `+5.0` per missing star
+- Players with the same distance score are grouped together.
+- The unit-grouped farming output shows up to 15 recommendations and up to 3 player groups per unit.
+- The territory-grouped farming output shows recommendations by planet and up to 2 player groups per unit.
+
+**Current farming labels:**
+- `+XR`: already reliced, needs more relic levels
+- `at G13`: at Gear 13 but not reliced yet
+- `needs G13 (+Xg)`: below Gear 13
+- `needs X★`: star-gated before the required relic level
+
+**Aggregation rules:**
+- In `--output-format farming`, the same unit/relic requirement is combined across territories before ranking.
+- In `--output-format farming-by-territory`, recommendations stay grouped by planet and show each unit's unfilled slot count.
 
 ### Bonus Zone Readiness Analysis
 
@@ -80,8 +121,10 @@ uv run pytest test/test_bonus_zone_readiness.py -v -s
 
 **What it analyzes:**
 - Current qualifying player count vs unlock threshold (Zeffo: 30/30, Mandalore: 25/25)
-- "Distance" to qualify for each near-qualifying player using the farming formula:
-  - `distance = (relic_gap × 1.0) + (gear_gap × 0.5) + (star_gap × 2.0)`
+- "Distance" to qualify for each near-qualifying player using the same weighted farming model:
+   - relic upgrade cost weights from `data/relic_costs.json`
+   - `+2.0` per gear level needed to reach G13
+   - `+5.0` per missing star
 - Total guild farming effort to fill the gap
 - Quick wins (players within distance < 5)
 

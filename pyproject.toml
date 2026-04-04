@@ -13,6 +13,7 @@ dependencies = [
 [project.scripts]
 kyrotech = "swgoh_helper.app:run_kyrotech"
 rote-platoon = "swgoh_helper.app:run_rote_platoon"
+rote-farm = "swgoh_helper.app:run_rote_farm"
 rote_bonus_readiness = "swgoh_helper.rote_bonus_readiness:run_rote_bonus_readiness"
 
 [build-system]
