@@ -13,6 +13,7 @@ from typing import Any, Callable, Dict, Optional, TypeVar
 import requests
 
 from ..cache_manager import CacheManager
+from ..progress import ProgressNotifier
 
 
 T = TypeVar("T")
@@ -28,17 +29,29 @@ class BaseApiClient:
 
     BASE_URL = "https://swgoh.gg/api"
 
-    def __init__(self, api_key: str, cache_manager: Optional[CacheManager] = None):
+    def __init__(
+        self,
+        api_key: str,
+        cache_manager: Optional[CacheManager] = None,
+        progress: Optional[ProgressNotifier] = None,
+    ):
         """
         Initialize the API client.
 
         Args:
             api_key: API key for SWGOH.gg authentication
             cache_manager: Optional cache manager instance (creates default if None)
+            progress: Optional progress notifier for status updates
         """
         self._api_key = api_key
         self._headers = {"x-gg-bot-access": api_key}
         self._cache = cache_manager or CacheManager()
+        self._progress = progress or ProgressNotifier()
+
+    @property
+    def progress(self) -> ProgressNotifier:
+        """Access the progress notifier."""
+        return self._progress
 
     @property
     def cache(self) -> CacheManager:
@@ -90,11 +103,11 @@ class BaseApiClient:
         cached_data = self._cache.get(cache_key)
         if cached_data is not None:
             if not silent and cache_message:
-                print(cache_message)
+                self._progress.update(cache_message)
             return cached_data
 
         if not silent and fetch_message:
-            print(fetch_message)
+            self._progress.update(fetch_message)
         data = fetch_func()
         self._cache.set(cache_key, data)
         return data

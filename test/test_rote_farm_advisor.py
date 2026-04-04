@@ -151,19 +151,19 @@ def sample_player_roster():
     # Create unit mocks
     traya_unit = MagicMock()
     traya_unit.data.base_id = "DARTHTRAYA"
-    traya_unit.data.relic_tier = 4  # API value (means R3)
+    traya_unit.data.relic_tier = 5  # API value (means R3)
     traya_unit.data.gear_level = 13
     traya_unit.data.rarity = 7
 
     ugnaught_unit = MagicMock()
     ugnaught_unit.data.base_id = "UGNAUGHT"
-    ugnaught_unit.data.relic_tier = 5  # API value (means R4)
+    ugnaught_unit.data.relic_tier = 6  # API value (means R4)
     ugnaught_unit.data.gear_level = 13
     ugnaught_unit.data.rarity = 7
 
     revan_unit = MagicMock()
     revan_unit.data.base_id = "DARTHREVAN"
-    revan_unit.data.relic_tier = 6  # API value (means R5)
+    revan_unit.data.relic_tier = 7  # API value (means R5)
     revan_unit.data.gear_level = 13
     revan_unit.data.rarity = 7
 
@@ -277,7 +277,7 @@ class TestFarmAdvisor:
 
         traya_unit = MagicMock()
         traya_unit.data.base_id = "DARTHTRAYA"
-        traya_unit.data.relic_tier = 4
+        traya_unit.data.relic_tier = 5
         traya_unit.data.gear_level = 13
         traya_unit.data.rarity = 7
 
@@ -303,7 +303,7 @@ class TestFarmAdvisor:
 
         traya_unit = MagicMock()
         traya_unit.data.base_id = "DARTHTRAYA"
-        traya_unit.data.relic_tier = 4
+        traya_unit.data.relic_tier = 5
         traya_unit.data.gear_level = 13
         traya_unit.data.rarity = 7
 

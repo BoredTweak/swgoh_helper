@@ -166,7 +166,7 @@ class CoverageMatrixBuilder:
                 gear_level = 13  # Ships don't have gear level
                 rarity = unit_data.rarity
             else:
-                actual_relic = self._convert_relic_tier(unit_data.relic_tier)
+                actual_relic = unit_data.relic_tier_ui
                 gear_level = unit_data.gear_level
                 rarity = unit_data.rarity
 
@@ -191,22 +191,6 @@ class CoverageMatrixBuilder:
                 rarity=rarity,
             )
             matrix.units[unit_id].players_by_relic[effective_tier].append(player_info)
-
-    def _convert_relic_tier(self, api_relic_tier: Optional[int]) -> Optional[int]:
-        """
-        Convert API relic_tier value to actual relic level.
-
-        SWGOH.GG API encoding: None=not G13, 1=G13 no relic, 2=R0, 3=R1, ..., 11=R9
-        Formula: actual_relic = relic_tier - 2 (when relic_tier >= 3)
-        """
-        if api_relic_tier is None:
-            return None
-
-        if api_relic_tier < 3:
-            # G13 but no relic (tier 1 or 2), not eligible for ROTE
-            return None
-
-        return api_relic_tier - 2
 
 
 class PathEligibilityFilter:

@@ -22,8 +22,7 @@ Distance scoring uses the farming recommendations formula:
 import json
 import sys
 from pathlib import Path
-from typing import Dict, List, Set
-
+from typing import Dict, List, Optional, Set
 from swgoh_helper.constants import (
     ZEFFO_UNITS,
     MANDALORE_UNITS,
@@ -41,11 +40,13 @@ from swgoh_helper.constants import (
     RELIC_STAR_REQUIREMENTS,
 )
 from swgoh_helper.models import PlayerResponse
-from swgoh_helper.models.rote import PrereqStatus
 from swgoh_helper.models.rote import (
-    PlayerDistance,
     BonusZoneReadiness,
+    PlayerDistance,
+    PrereqStatus,
+    UnitProgressStatus,
 )
+from swgoh_helper.progress import ProgressNotifier
 
 
 def calculate_unit_distance(
@@ -154,17 +155,6 @@ def load_player_rosters(member_ally_codes: Set[int]) -> List[PlayerResponse]:
     return rosters
 
 
-def convert_relic_tier(api_relic_tier: int | None) -> int:
-    """
-    Convert API relic_tier value to actual relic level.
-    API encoding: None=not G13, 1=G13 no relic, 2=R0, 3=R1, ..., 11=R9
-    Returns -1 for non-reliced units.
-    """
-    if api_relic_tier is None or api_relic_tier < 3:
-        return -1
-    return api_relic_tier - 2
-
-
 def calculate_beskar_prereq_status(roster: PlayerResponse) -> PrereqStatus:
     """
     Calculate distance to unlock Beskar Mando.
@@ -251,7 +241,7 @@ def calculate_bokatan_prereq_status(roster: PlayerResponse) -> PrereqStatus:
         for unit in roster.units:
             if unit.data.base_id == prereq_id:
                 found = True
-                relic_tier = convert_relic_tier(unit.data.relic_tier)
+                relic_tier = unit.data.relic_tier_or_minus_one
                 gear_level = unit.data.gear_level
                 rarity = unit.data.rarity
 
@@ -290,22 +280,12 @@ def calculate_bokatan_prereq_status(roster: PlayerResponse) -> PrereqStatus:
     )
 
 
-class UnitProgress(BaseModel):
-    """Progress data for a single unit."""
-
-    has_unit: bool
-    relic_tier: int  # -1 if not reliced
-    gear_level: int  # 1-13
-    rarity: int  # 1-7 stars
-    distance: float  # Distance to R7 requirement
-
-
 def get_player_unit_status(
     roster: PlayerResponse, required_units: Dict[str, str]
-) -> Dict[str, UnitProgress]:
+) -> Dict[str, UnitProgressStatus]:
     """Check if player has the required units and calculate distance to R7."""
     result = {
-        unit_id: UnitProgress(
+        unit_id: UnitProgressStatus(
             has_unit=False,
             relic_tier=-1,
             gear_level=1,
@@ -318,13 +298,13 @@ def get_player_unit_status(
     for player_unit in roster.units:
         unit_id = player_unit.data.base_id
         if unit_id in required_units:
-            relic_tier = convert_relic_tier(player_unit.data.relic_tier)
+            relic_tier = player_unit.data.relic_tier_or_minus_one
             gear_level = player_unit.data.gear_level
             rarity = player_unit.data.rarity
             distance = calculate_unit_distance(
                 relic_tier, gear_level, rarity, MIN_RELIC_TIER
             )
-            result[unit_id] = UnitProgress(
+            result[unit_id] = UnitProgressStatus(
                 has_unit=True,
                 relic_tier=relic_tier,
                 gear_level=gear_level,
@@ -804,22 +784,21 @@ def print_officer_writeup(
 class BonusReadinessApp:
     """Application for analyzing Rise of the Empire bonus zone readiness."""
 
+    def __init__(self, progress: Optional[ProgressNotifier] = None):
+        self.progress = progress or ProgressNotifier()
+
     def analyze(self, guild_id: str) -> None:
         """Analyze guild readiness for bonus zones."""
-        print("\n" + "=" * 60)
-        print("  BONUS ZONE READINESS ANALYSIS")
-        print("  Rise of the Empire Territory Battle")
-        print("=" * 60)
+        self.progress.update("Starting bonus zone readiness analysis...")
 
         # Load guild data and filter to current members only
         guild_data = load_guild_data(guild_id)
         guild_name = guild_data.get("name", "Unknown Guild")
         member_ally_codes = get_current_member_ally_codes(guild_data)
-        print(f"\n  Guild: {guild_name}")
-        print(f"  Current members: {len(member_ally_codes)}")
+        self.progress.update(f"Guild: {guild_name} ({len(member_ally_codes)} members)")
 
         rosters = load_player_rosters(member_ally_codes)
-        print(f"  Loaded {len(rosters)} player rosters")
+        self.progress.update(f"Loaded {len(rosters)} player rosters")
 
         # Analyze both zones
         zeffo = analyze_zeffo_readiness(rosters)

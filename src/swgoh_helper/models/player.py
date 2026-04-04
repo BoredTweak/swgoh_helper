@@ -2,7 +2,7 @@
 Pydantic models for SWGOH player data.
 """
 
-from typing import List, Optional, Dict, Any
+from typing import List, Optional, Dict
 from pydantic import BaseModel, Field
 
 
@@ -58,6 +58,24 @@ class UnitData(BaseModel):
     relic_tier: Optional[int] = Field(default=None)
     has_ultimate: bool
     is_galactic_legend: bool
+
+    @staticmethod
+    def api_to_ui_relic_tier(api_relic_tier: Optional[int]) -> Optional[int]:
+        """Convert SWGOH API relic_tier encoding to UI relic level (R1-R9)."""
+        if api_relic_tier is None or api_relic_tier < 3:
+            return None
+        return api_relic_tier - 2
+
+    @property
+    def relic_tier_ui(self) -> Optional[int]:
+        """UI relic level (R1-R9), or None for non-reliced characters."""
+        return self.api_to_ui_relic_tier(self.relic_tier)
+
+    @property
+    def relic_tier_or_minus_one(self) -> int:
+        """UI relic level or -1 sentinel for non-reliced characters."""
+        ui_relic = self.relic_tier_ui
+        return ui_relic if ui_relic is not None else -1
 
 
 class PlayerUnit(BaseModel):
@@ -175,7 +193,6 @@ class PlayerData(BaseModel):
     guild_id: str
     guild_name: str
     guild_url: str
-    mods: List[Any] = Field(default_factory=list)
 
 
 class PlayerResponse(BaseModel):

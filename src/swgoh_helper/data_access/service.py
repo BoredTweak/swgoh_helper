@@ -8,6 +8,7 @@ through a cohesive, OOP-compliant interface.
 from typing import Dict, List, Optional
 
 from ..cache_manager import CacheManager
+from ..progress import ProgressNotifier
 from ..models import (
     Ability,
     AbilitiesResponse,
@@ -47,6 +48,7 @@ class SwgohDataService:
         self,
         api_key: str,
         cache_manager: Optional[CacheManager] = None,
+        progress: Optional[ProgressNotifier] = None,
     ):
         """
         Initialize the data service.
@@ -54,8 +56,9 @@ class SwgohDataService:
         Args:
             api_key: API key for SWGOH.gg authentication
             cache_manager: Optional cache manager (creates default if None)
+            progress: Optional progress notifier for status updates
         """
-        self._client = BaseApiClient(api_key, cache_manager)
+        self._client = BaseApiClient(api_key, cache_manager, progress)
 
         # Initialize repositories
         self._units = UnitsRepository(self._client)

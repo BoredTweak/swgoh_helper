@@ -74,29 +74,35 @@ class PlayersRepository(BaseRepository):
             List of PlayerResponse objects
         """
         total = len(ally_codes)
-        print(f"\nFetching rosters for {total} players...")
+        self._client.progress.update(f"Fetching rosters for {total} players...")
 
         cached_codes, uncached_codes = self._partition_by_cache_status(ally_codes)
-        print(
+        self._client.progress.update(
             f"  Found {len(cached_codes)} cached, {len(uncached_codes)} to fetch from API"
         )
 
         rosters: List[PlayerResponse] = []
 
         if cached_codes:
-            print(f"\n  Loading {len(cached_codes)} cached rosters in parallel...")
+            self._client.progress.update(
+                f"Loading {len(cached_codes)} cached rosters in parallel..."
+            )
             cached_rosters = self._fetch_players_parallel(cached_codes)
             rosters.extend(cached_rosters)
-            print(f"  Loaded {len(cached_rosters)} cached rosters.")
+            self._client.progress.update(
+                f"Loaded {len(cached_rosters)} cached rosters."
+            )
 
         if uncached_codes:
-            print(f"\n  Fetching {len(uncached_codes)} rosters from API...")
+            self._client.progress.update(
+                f"Fetching {len(uncached_codes)} rosters from API..."
+            )
             uncached_rosters = self._fetch_players_sequential(
                 uncached_codes, delay_seconds
             )
             rosters.extend(uncached_rosters)
 
-        print(f"\nSuccessfully fetched {len(rosters)} rosters.\n")
+        self._client.progress.update(f"Successfully fetched {len(rosters)} rosters.")
         return rosters
 
     def _partition_by_cache_status(
@@ -133,7 +139,9 @@ class PlayersRepository(BaseRepository):
                     roster = future.result()
                     rosters.append(roster)
                 except Exception as e:
-                    print(f"    Warning: Failed to load cached {ally_code}: {e}")
+                    self._client.progress.update(
+                        f"Warning: Failed to load cached {ally_code}: {e}"
+                    )
 
         return rosters
 
@@ -146,13 +154,15 @@ class PlayersRepository(BaseRepository):
 
         for idx, ally_code in enumerate(ally_codes, 1):
             try:
-                print(f"    [{idx}/{total}] Fetching {ally_code}...")
+                self._client.progress.update(f"[{idx}/{total}] Fetching {ally_code}...")
                 roster = self.get_player(str(ally_code))
                 rosters.append(roster)
                 if idx < total and delay_seconds > 0:
                     time.sleep(delay_seconds)
             except Exception as e:
-                print(f"    Warning: Failed to fetch {ally_code}: {e}")
+                self._client.progress.update(
+                    f"Warning: Failed to fetch {ally_code}: {e}"
+                )
                 continue
 
         return rosters
