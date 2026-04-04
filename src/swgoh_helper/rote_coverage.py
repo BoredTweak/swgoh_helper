@@ -88,6 +88,7 @@ class CoverageMatrixBuilder:
         rosters: List[PlayerResponse],
         guild_name: str,
         guild_id: str,
+        ignored_players: Optional[List[str]] = None,
     ) -> CoverageMatrix:
         """Build a complete coverage matrix from guild rosters."""
         matrix = CoverageMatrix(
@@ -97,6 +98,8 @@ class CoverageMatrixBuilder:
         )
 
         for roster in rosters:
+            if ignored_players and roster.data.name in ignored_players:
+                continue
             self._process_player_roster(roster, matrix)
 
         return matrix
@@ -286,12 +289,46 @@ def build_coverage_matrix(
     units_data: UnitsResponse,
     guild_name: str,
     guild_id: str,
+    ignored_players: Optional[List[str]] = None,
 ) -> CoverageMatrix:
     """Build a coverage matrix from guild rosters."""
     builder = CoverageMatrixBuilder(units_data)
-    return builder.build_from_rosters(rosters, guild_name, guild_id)
+    return builder.build_from_rosters(
+        rosters, guild_name, guild_id, ignored_players=ignored_players
+    )
 
 
 def load_requirements(path: Optional[Path] = None) -> SimpleRoteRequirements:
     """Load ROTE platoon requirements from JSON."""
     return RoteRequirementsLoader.load(path)
+
+
+def filter_requirements_by_phase(
+    requirements: SimpleRoteRequirements, max_phase: str
+) -> SimpleRoteRequirements:
+    """Filter requirements to only include territories up to max_phase."""
+    base_phases = ["1", "2", "3", "4", "5", "6"]
+
+    try:
+        max_phase_idx = base_phases.index(max_phase)
+    except ValueError:
+        print(f"Warning: Unknown phase '{max_phase}', using all phases.")
+        return requirements
+
+    included_phases = set()
+    for i in range(max_phase_idx + 1):
+        phase = base_phases[i]
+        included_phases.add(phase)
+        included_phases.add(f"{phase}b")  # Include bonus planet for this phase
+
+    filtered_reqs = []
+    for req in requirements.requirements:
+        territory_phase = RoteConfig.TERRITORY_PHASE.get(req.territory, "99")
+        if territory_phase in included_phases:
+            filtered_reqs.append(req)
+
+    return SimpleRoteRequirements(
+        version=requirements.version,
+        last_updated=requirements.last_updated,
+        requirements=filtered_reqs,
+    )

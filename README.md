@@ -59,6 +59,11 @@ Optionally limit analysis to a specific phase:
 uv run rote-platoon 123-456-789 --max-phase 4
 ```
 
+Show every qualifying owner for each platoon requirement, grouped by territory:
+```powershell
+uv run rote-platoon 123-456-789 --max-phase 4 --show-owners
+```
+
 Valid phases: `1`, `2`, `3`, `3b`, `4`, `4b`, `5`, `5b`, `6`
 
 **Output includes:**
@@ -67,6 +72,10 @@ Valid phases: `1`, `2`, `3`, `3b`, `4`, `4b`, `5`, `5b`, `6`
 - Critical gaps (units with fewer players than slots needed)
 - Limited availability units (only 1-3 players have them)
 - Farming recommendations (closest players to each gap)
+
+**Optional flags:**
+- `--by-territory` groups farming recommendations by planet
+- `--show-owners` lists all qualifying players for each platoon requirement by planet
 
 See [Farming Recommendations](docs/farming_recommendations.md) for details on how proximity is calculated.
 

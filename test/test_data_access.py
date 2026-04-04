@@ -3,7 +3,7 @@ Unit tests for the SWGOH.gg data access layer.
 """
 
 import pytest
-from unittest.mock import Mock, MagicMock, patch
+from unittest.mock import Mock, patch
 
 from swgoh_helper.data_access import (
     BaseApiClient,
@@ -24,8 +24,6 @@ from swgoh_helper.models import (
     GuildResponse,
     GuildData,
     GearPiece,
-    Ability,
-    StatDefinition,
 )
 
 

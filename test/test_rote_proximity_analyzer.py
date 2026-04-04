@@ -6,15 +6,13 @@ from swgoh_helper.rote_proximity_analyzer import (
     ProximityAnalyzer,
     ProgressStage,
     PlayerProgress,
-    GapProximityReport,
 )
 from swgoh_helper.rote_coverage import (
     CoverageMatrix,
     UnitCoverage,
     PlayerUnitInfo,
-    CoverageMatrixBuilder,
 )
-from swgoh_helper.rote_gap_analyzer import GapAnalyzer, PlatoonGap, GapSeverity
+from swgoh_helper.rote_gap_analyzer import GapAnalyzer
 from swgoh_helper.rote_models import (
     RotePath,
     SimpleRoteRequirements,
@@ -23,13 +21,7 @@ from swgoh_helper.rote_models import (
 from swgoh_helper.models import (
     Unit,
     UnitsResponse,
-    PlayerResponse,
-    PlayerData,
-    PlayerUnit,
-    UnitData,
-    ArenaSquad,
 )
-from collections import defaultdict
 
 
 # ============================================================================

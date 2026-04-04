@@ -383,3 +383,87 @@ class UnitProgressStatus(BaseModel):
     gear_level: int  # 1-13
     rarity: int  # 1-7 stars
     distance: float  # Distance to R7 requirement
+
+
+# ===== Personal Farm Recommendation Models =====
+
+
+class PersonalFarmRecommendation(BaseModel):
+    """A personalized farm recommendation for a specific player."""
+
+    unit_id: str
+    unit_name: str
+    required_relic: int
+    territories: List[str]  # Which territories need this unit
+
+    # Player's current state
+    current_relic: int  # -1 if not reliced
+    gear_level: int
+    rarity: int
+    has_unit: bool
+
+    # Progress metrics
+    relic_gap: int
+    gear_gap: int
+    star_gap: int
+    distance_score: float
+
+    # Guild context
+    guild_owners: int  # How many guild members already qualify
+    slots_needed: int  # Total slots needed across all territories
+    slots_unfillable: int  # How many slots can't be filled
+    guild_density: float  # guild_owners / slots_needed (lower = more needed)
+
+    # Priority scoring
+    need_score: float  # Higher = guild needs this more
+    priority_score: float  # Combined score (need + closeness)
+    priority_rank: int = 0  # Rank among all recommendations
+
+    @computed_field
+    @property
+    def status_string(self) -> str:
+        """Human-readable status string."""
+        if not self.has_unit:
+            return "Not owned"
+        elif self.current_relic >= 0:
+            return f"R{self.current_relic}"
+        else:
+            return f"G{self.gear_level} {self.rarity}*"
+
+    @computed_field
+    @property
+    def progress_summary(self) -> str:
+        """Summary of what's needed to qualify."""
+        if self.current_relic >= self.required_relic:
+            return "Already qualifies!"
+
+        parts = []
+        if self.star_gap > 0:
+            parts.append(f"+{self.star_gap}★")
+        if self.gear_gap > 0:
+            parts.append(f"+{self.gear_gap} gear")
+        if self.relic_gap > 0:
+            parts.append(f"+{self.relic_gap}R")
+
+        return " ".join(parts) if parts else "Ready"
+
+
+class PersonalFarmReport(BaseModel):
+    """Complete farm recommendation report for a player."""
+
+    player_name: str
+    ally_code: int
+    guild_name: str
+    guild_member_count: int
+    max_phase: Optional[str] = None
+
+    # Summary stats
+    total_gaps: int
+    units_player_can_help: int
+    units_player_already_qualifies: int
+
+    # Recommendations sorted by priority
+    recommendations: List[PersonalFarmRecommendation]
+
+    # Units where player already qualifies (for reference)
+    already_qualified: List[str] = Field(default_factory=list)

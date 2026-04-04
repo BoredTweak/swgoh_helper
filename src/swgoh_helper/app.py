@@ -3,7 +3,6 @@ import os
 import sys
 import traceback
 import requests
-from collections import defaultdict
 from typing import Optional
 
 from .data_access import SwgohDataService
@@ -15,6 +14,7 @@ from .kyrotech_analyzer import (
 from .results_presenter import ResultsPresenter
 from .rote_coverage import (
     build_coverage_matrix,
+    filter_requirements_by_phase,
     load_requirements,
     CoverageAnalyzer,
     RoteConfig,
@@ -208,6 +208,8 @@ class RotePlatoonApp:
         max_phase: Optional[str] = None,
         refresh: bool = False,
         by_territory: bool = False,
+        show_owners: bool = False,
+        ignored_players: Optional[list[str]] = None,
     ) -> None:
         """Fetch guild information and analyze platoon coverage."""
         try:
@@ -240,6 +242,7 @@ class RotePlatoonApp:
                 units_data=units_data,
                 guild_name=guild_name,
                 guild_id=guild_id,
+                ignored_players=ignored_players,
             )
 
             print(f"Analyzed {len(coverage_matrix.units)} unique units across roster.")
@@ -248,9 +251,7 @@ class RotePlatoonApp:
             requirements = load_requirements()
 
             if max_phase:
-                requirements = self._filter_requirements_by_phase(
-                    requirements, max_phase
-                )
+                requirements = filter_requirements_by_phase(requirements, max_phase)
                 print(
                     f"Filtered to phase {max_phase}: {len(requirements.requirements)} requirements."
                 )
@@ -274,6 +275,7 @@ class RotePlatoonApp:
                     bottleneck_analyzer,
                     proximity_analyzer,
                     by_territory=by_territory,
+                    show_owners=show_owners,
                 )
             )
 
@@ -288,33 +290,99 @@ class RotePlatoonApp:
             traceback.print_exc()
             sys.exit(1)
 
-    def _filter_requirements_by_phase(self, requirements, max_phase: str):
-        """Filter requirements to only include territories up to max_phase."""
-        base_phases = ["1", "2", "3", "4", "5", "6"]
 
+class RoteFarmAdvisorApp:
+    """Application for generating personalized ROTE farming recommendations."""
+
+    def __init__(self, api_key: str):
+        self.service = SwgohDataService(api_key)
+
+    def recommend_for_player(
+        self,
+        ally_code: str,
+        max_phase: Optional[str] = None,
+        max_recommendations: int = 15,
+        include_unowned: bool = False,
+    ) -> None:
+        """Generate personalized farm recommendations for a player."""
         try:
-            max_phase_idx = base_phases.index(max_phase)
-        except ValueError:
-            print(f"Warning: Unknown phase '{max_phase}', using all phases.")
-            return requirements
+            # Get player's guild info
+            guild_id, guild_name, member_ally_codes = (
+                self.service.get_guild_from_ally_code(ally_code)
+            )
 
-        included_phases = set()
-        for i in range(max_phase_idx + 1):
-            phase = base_phases[i]
-            included_phases.add(phase)
-            included_phases.add(f"{phase}b")  # Include bonus planet for this phase
+            print(f"\n{'='*60}")
+            print(f"Guild: {guild_name}")
+            print(f"Guild ID: {guild_id}")
+            print(f"Members: {len(member_ally_codes)}")
+            print(f"{'='*60}")
 
-        filtered_reqs = []
-        for req in requirements.requirements:
-            territory_phase = RoteConfig.TERRITORY_PHASE.get(req.territory, "99")
-            if territory_phase in included_phases:
-                filtered_reqs.append(req)
+            print("\nLoading unit metadata...")
+            units_data = self.service.get_all_units()
 
-        return SimpleRoteRequirements(
-            version=requirements.version,
-            last_updated=requirements.last_updated,
-            requirements=filtered_reqs,
-        )
+            print("\nLoading guild rosters...")
+            rosters = self.service.get_guild_rosters(
+                member_ally_codes, delay_seconds=1.0
+            )
+            print(f"Loaded data for {len(rosters)} guild members.")
+
+            # Find the target player's roster
+            target_roster = None
+            ally_code_int = int(ally_code.replace("-", ""))
+            for roster in rosters:
+                if roster.data.ally_code == ally_code_int:
+                    target_roster = roster
+                    break
+
+            if target_roster is None:
+                print(
+                    f"Error: Could not find player with ally code {ally_code} in guild."
+                )
+                sys.exit(1)
+
+            print(f"\nAnalyzing recommendations for: {target_roster.data.name}")
+
+            print("\nBuilding coverage matrix...")
+            coverage_matrix = build_coverage_matrix(
+                rosters=rosters,
+                units_data=units_data,
+                guild_name=guild_name,
+                guild_id=guild_id,
+            )
+
+            print("\nLoading ROTE platoon requirements...")
+            requirements = load_requirements()
+
+            if max_phase:
+                requirements = filter_requirements_by_phase(requirements, max_phase)
+                print(
+                    f"Filtered to phase {max_phase}: {len(requirements.requirements)} requirements."
+                )
+
+            print("\nGenerating personalized recommendations...")
+            from .rote_farm_advisor import FarmAdvisor
+
+            advisor = FarmAdvisor(coverage_matrix, requirements)
+            report = advisor.get_player_recommendations(
+                target_roster,
+                max_recommendations=max_recommendations,
+                include_unowned=include_unowned,
+            )
+            report.max_phase = max_phase
+
+            presenter = RotePresenter()
+            print("\n" + presenter.format_personal_farm_report(report))
+
+        except ValueError as e:
+            print(f"Error: {e}")
+            sys.exit(1)
+        except requests.exceptions.RequestException as e:
+            print(f"Error fetching data: {e}")
+            sys.exit(1)
+        except Exception as e:
+            print(f"Error: {e}")
+            traceback.print_exc()
+            sys.exit(1)
 
 
 def print_usage():
@@ -325,7 +393,9 @@ def print_usage():
     print(
         "  kyrotech <ally_code>      Analyze a player's roster for kyrotech requirements"
     )
-    print("  rote_platoon <ally_code> [--max-phase N] [--refresh] [--by-territory]")
+    print(
+        "  rote_platoon <ally_code> [--max-phase N] [--refresh] [--by-territory] [--show-owners]"
+    )
     print("                            Analyze guild for RotE platoon requirements")
     print("                            --max-phase: Limit analysis to phases up to N")
     print("                                         (e.g., 4, 3b, 5)")
@@ -335,12 +405,28 @@ def print_usage():
     print(
         "                            --by-territory: Group farming recommendations by planet"
     )
+    print(
+        "                            --show-owners: Show requirement owners grouped by planet"
+    )
+    print()
+    print(
+        "  rote_farm <ally_code> [--max-phase N] [--max-recommendations N] [--include-unowned]"
+    )
+    print(
+        "                            Personal farm recommendations based on guild needs"
+    )
+    print("                            --max-phase: Limit analysis to phases up to N")
+    print(
+        "                            --max-recommendations: Max units to recommend (default 15)"
+    )
+    print("                            --include-unowned: Include units you don't own")
     print()
     print("Examples:")
     print("  python app.py kyrotech 123-456-789")
     print("  python app.py rote_platoon 123-456-789")
     print("  python app.py rote_platoon 123-456-789 --max-phase 4")
     print("  python app.py rote_platoon 123-456-789 --refresh")
+    print("  python app.py rote_farm 123-456-789 --max-phase 4")
 
 
 def run_kyrotech():
@@ -379,7 +465,7 @@ def run_rote_platoon():
     """Entry point for rote-platoon CLI command."""
     if len(sys.argv) < 2:
         print(
-            "Usage: rote-platoon <ally_code> [--max-phase N] [--refresh] [--by-territory]"
+            "Usage: rote-platoon <ally_code> [--max-phase N] [--refresh] [--by-territory] [--show-owners] [--ignore-players PLAYER1,PLAYER2,...]"
         )
         sys.exit(1)
 
@@ -392,6 +478,8 @@ def run_rote_platoon():
     max_phase = None
     refresh = False
     by_territory = False
+    show_owners = False
+    ignored_players = []
     for i, arg in enumerate(sys.argv[2:], start=2):
         if arg == "--max-phase" and i + 1 < len(sys.argv):
             max_phase = sys.argv[i + 1]
@@ -399,10 +487,61 @@ def run_rote_platoon():
             refresh = True
         elif arg == "--by-territory":
             by_territory = True
-
+        elif arg == "--show-owners":
+            show_owners = True
+        elif arg == "--ignore-players" and i + 1 < len(sys.argv):
+            ignored_players = sys.argv[i + 1].split(",")
+            print(f"Ignoring players: {', '.join(ignored_players)}")
     app = RotePlatoonApp(SWGOH_API_KEY)
     app.analyze_guild(
-        ally_code, max_phase=max_phase, refresh=refresh, by_territory=by_territory
+        ally_code,
+        max_phase=max_phase,
+        refresh=refresh,
+        by_territory=by_territory,
+        show_owners=show_owners,
+        ignored_players=ignored_players if "ignored_players" in locals() else None,
+    )
+
+
+def run_rote_farm():
+    """Entry point for rote-farm CLI command."""
+    if len(sys.argv) < 2:
+        print(
+            "Usage: rote-farm <ally_code> [--max-phase N] [--max-recommendations N] [--include-unowned]"
+        )
+        print()
+        print("Options:")
+        print("  --max-phase N         Limit to phases 1-N (default: all)")
+        print(
+            "  --max-recommendations N  Maximum recommendations to show (default: 15)"
+        )
+        print("  --include-unowned     Include units you don't own yet")
+        sys.exit(1)
+
+    if not SWGOH_API_KEY:
+        print("Error: SWGOH_API_KEY not found in environment variables")
+        print("Please create a .env file with your API key")
+        sys.exit(1)
+
+    ally_code = sys.argv[1]
+    max_phase = None
+    max_recommendations = 15
+    include_unowned = False
+
+    for i, arg in enumerate(sys.argv[2:], start=2):
+        if arg == "--max-phase" and i + 1 < len(sys.argv):
+            max_phase = sys.argv[i + 1]
+        elif arg == "--max-recommendations" and i + 1 < len(sys.argv):
+            max_recommendations = int(sys.argv[i + 1])
+        elif arg == "--include-unowned":
+            include_unowned = True
+
+    app = RoteFarmAdvisorApp(SWGOH_API_KEY)
+    app.recommend_for_player(
+        ally_code,
+        max_phase=max_phase,
+        max_recommendations=max_recommendations,
+        include_unowned=include_unowned,
     )
 
 
@@ -432,7 +571,7 @@ def main():
         if len(sys.argv) < 3:
             print("Error: ally_code is required for rote_platoon command")
             print(
-                "Usage: python app.py rote_platoon <ally_code> [--max-phase N] [--refresh]"
+                "Usage: python app.py rote_platoon <ally_code> [--max-phase N] [--refresh] [--by-territory] [--show-owners]"
             )
             sys.exit(1)
 
@@ -444,14 +583,31 @@ def main():
         ally_code = sys.argv[2]
         max_phase = None
         refresh = False
+        by_territory = False
+        show_owners = False
+        ignored_players = []
         for i, arg in enumerate(sys.argv[3:], start=3):
             if arg == "--max-phase" and i + 1 < len(sys.argv):
                 max_phase = sys.argv[i + 1]
             elif arg == "--refresh":
                 refresh = True
+            elif arg == "--by-territory":
+                by_territory = True
+            elif arg == "--show-owners":
+                show_owners = True
+            elif arg == "--ignore-players" and i + 1 < len(sys.argv):
+                ignored_players = sys.argv[i + 1].split(",")
+                print(f"Ignoring players: {', '.join(ignored_players)}")
 
         app = RotePlatoonApp(SWGOH_API_KEY)
-        app.analyze_guild(ally_code, max_phase=max_phase, refresh=refresh)
+        app.analyze_guild(
+            ally_code,
+            max_phase=max_phase,
+            refresh=refresh,
+            by_territory=by_territory,
+            show_owners=show_owners,
+            ignored_players=ignored_players,
+        )
     else:
         print(f"Unknown command: {command}")
         print()

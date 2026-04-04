@@ -24,8 +24,6 @@ import sys
 from pathlib import Path
 from typing import Dict, List, Set
 
-from pydantic import BaseModel
-
 from swgoh_helper.constants import (
     ZEFFO_UNITS,
     MANDALORE_UNITS,
@@ -43,6 +41,7 @@ from swgoh_helper.constants import (
     RELIC_STAR_REQUIREMENTS,
 )
 from swgoh_helper.models import PlayerResponse
+from swgoh_helper.models.rote import PrereqStatus
 from swgoh_helper.models.rote import (
     PlayerDistance,
     BonusZoneReadiness,
@@ -164,15 +163,6 @@ def convert_relic_tier(api_relic_tier: int | None) -> int:
     if api_relic_tier is None or api_relic_tier < 3:
         return -1
     return api_relic_tier - 2
-
-
-class PrereqStatus(BaseModel):
-    """Status of unlock prerequisites for a character."""
-
-    can_unlock: bool  # Already has the character unlocked
-    prereq_distance: float  # Distance to complete all prereqs (0 if can_unlock)
-    missing_prereqs: List[str]  # Names of prereq units not at required level
-    detail: str  # Human-readable summary
 
 
 def calculate_beskar_prereq_status(roster: PlayerResponse) -> PrereqStatus:
