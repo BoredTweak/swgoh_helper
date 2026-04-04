@@ -116,7 +116,10 @@ class RotePresenter:
             lines.extend(["", "**Limited Availability**"])
             for u in sorted(rare_units, key=lambda x: x.owner_count):
                 owners = ", ".join(u.owner_names[:3])
-                lines.append(f"- {u.unit_name} R{u.min_relic} → {owners}")
+                territories = self._format_slots_per_territory(u.slots_per_territory)
+                lines.append(
+                    f"- {u.unit_name} R{u.min_relic}: {territories} → {owners}"
+                )
 
         return lines
 
@@ -248,6 +251,14 @@ class RotePresenter:
             lines.append(f"  - {label}: {names}")
 
         return lines
+
+    def _format_slots_per_territory(self, slots_per_territory: dict[str, int]) -> str:
+        """Format slots per territory with phase prefixes for compact display."""
+        formatted = []
+        for territory, slots in slots_per_territory.items():
+            phase = RoteConfig.TERRITORY_PHASE.get(territory, "?")
+            formatted.append(f"P{phase} {territory} ×{slots}")
+        return ", ".join(formatted)
 
     def format_personal_farm_report(self, report) -> str:
         """Format personalized farming recommendations for a player."""

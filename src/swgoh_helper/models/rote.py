@@ -246,8 +246,19 @@ class UnicornUnit(BaseModel):
     min_relic: int
     owner_names: List[str]
     owner_count: int
-    territories_needed: List[str]  # Which territories need this unit
-    total_slots_needed: int  # Total slots across all territories
+    slots_per_territory: Dict[str, int]  # Territory -> slots needed
+
+    @computed_field
+    @property
+    def territories_needed(self) -> List[str]:
+        """List of territories that need this unit."""
+        return list(self.slots_per_territory.keys())
+
+    @computed_field
+    @property
+    def total_slots_needed(self) -> int:
+        """Total slots needed across all territories."""
+        return sum(self.slots_per_territory.values())
 
     @computed_field
     @property
