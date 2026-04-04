@@ -91,18 +91,58 @@ class CoverageMatrixBuilder:
         ignored_players: Optional[List[str]] = None,
     ) -> CoverageMatrix:
         """Build a complete coverage matrix from guild rosters."""
+        ignored_names, ignored_ally_codes = self._parse_ignored_players(ignored_players)
+        filtered_rosters = [
+            roster
+            for roster in rosters
+            if not self._is_ignored_roster(roster, ignored_names, ignored_ally_codes)
+        ]
+
         matrix = CoverageMatrix(
             guild_name=guild_name,
             guild_id=guild_id,
-            member_count=len(rosters),
+            member_count=len(filtered_rosters),
         )
 
-        for roster in rosters:
-            if ignored_players and roster.data.name in ignored_players:
-                continue
+        for roster in filtered_rosters:
             self._process_player_roster(roster, matrix)
 
         return matrix
+
+    def _parse_ignored_players(
+        self, ignored_players: Optional[List[str]]
+    ) -> tuple[set[str], set[int]]:
+        """Split ignored player tokens into normalized names and ally codes."""
+        names: set[str] = set()
+        ally_codes: set[int] = set()
+
+        if not ignored_players:
+            return names, ally_codes
+
+        for token in ignored_players:
+            cleaned = token.strip()
+            if not cleaned:
+                continue
+
+            compact = cleaned.replace("-", "")
+            if compact.isdigit() and len(compact) == 9:
+                ally_codes.add(int(compact))
+            else:
+                names.add(cleaned.casefold())
+
+        return names, ally_codes
+
+    def _is_ignored_roster(
+        self,
+        roster: PlayerResponse,
+        ignored_names: set[str],
+        ignored_ally_codes: set[int],
+    ) -> bool:
+        """Check if a roster should be excluded from coverage analysis."""
+        return (
+            roster.data.name.casefold() in ignored_names
+            or roster.data.ally_code in ignored_ally_codes
+        )
 
     def _process_player_roster(
         self, roster: PlayerResponse, matrix: CoverageMatrix

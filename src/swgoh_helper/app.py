@@ -19,7 +19,7 @@ from .rote_coverage import (
     CoverageAnalyzer,
     RoteConfig,
 )
-from .rote_models import SimpleRoteRequirements
+from .models import VALID_ROTE_OUTPUT_FORMATS
 from .rote_gap_analyzer import GapAnalyzer
 from .rote_bottleneck_analyzer import BottleneckAnalyzer
 from .rote_proximity_analyzer import ProximityAnalyzer
@@ -207,12 +207,17 @@ class RotePlatoonApp:
         ally_code: str,
         max_phase: Optional[str] = None,
         refresh: bool = False,
-        by_territory: bool = False,
-        show_owners: bool = False,
+        output_format: str = "gaps",
         ignored_players: Optional[list[str]] = None,
     ) -> None:
         """Fetch guild information and analyze platoon coverage."""
         try:
+            if output_format not in VALID_ROTE_OUTPUT_FORMATS:
+                raise ValueError(
+                    "Invalid --output-format. "
+                    "Expected one of: all, coverage, gaps, owners, farming, farming-by-territory"
+                )
+
             guild_id, guild_name, member_ally_codes = (
                 self.service.get_guild_from_ally_code(ally_code)
             )
@@ -274,8 +279,7 @@ class RotePlatoonApp:
                     gap_analyzer,
                     bottleneck_analyzer,
                     proximity_analyzer,
-                    by_territory=by_territory,
-                    show_owners=show_owners,
+                    output_format=output_format,
                 )
             )
 
@@ -394,19 +398,20 @@ def print_usage():
         "  kyrotech <ally_code>      Analyze a player's roster for kyrotech requirements"
     )
     print(
-        "  rote_platoon <ally_code> [--max-phase N] [--refresh] [--by-territory] [--show-owners]"
+        "  rote_platoon <ally_code> [--max-phase N] [--refresh] [--output-format FORMAT] [--ignore-players PLAYER1,PLAYER2,...]"
     )
     print("                            Analyze guild for RotE platoon requirements")
     print("                            --max-phase: Limit analysis to phases up to N")
     print("                                         (e.g., 4, 3b, 5)")
     print(
+        "                            --output-format: all|coverage|gaps|owners|farming|farming-by-territory"
+    )
+    print("                                             (default: gaps)")
+    print(
         "                            --refresh:   Force fresh data from API (ignore cache)"
     )
     print(
-        "                            --by-territory: Group farming recommendations by planet"
-    )
-    print(
-        "                            --show-owners: Show requirement owners grouped by planet"
+        "                            --ignore-players: Exclude players by name or ally code"
     )
     print()
     print(
@@ -461,11 +466,43 @@ def run_kyrotech():
         app.analyze_player(ally_code, include_unowned)
 
 
+def _parse_rote_platoon_args(start_index: int) -> dict[str, object]:
+    """Parse rote-platoon options."""
+    max_phase = None
+    refresh = False
+    output_format_arg = None
+    ignored_players: list[str] = []
+
+    for i, arg in enumerate(sys.argv[start_index:], start=start_index):
+        if arg == "--max-phase" and i + 1 < len(sys.argv):
+            max_phase = sys.argv[i + 1]
+        elif arg == "--refresh":
+            refresh = True
+        elif arg == "--output-format" and i + 1 < len(sys.argv):
+            output_format_arg = sys.argv[i + 1].lower()
+        elif arg in {"--by-territory", "--show-owners"}:
+            raise ValueError(f"{arg} has been retired. Use --output-format instead.")
+        elif arg == "--ignore-players" and i + 1 < len(sys.argv):
+            ignored_players = [
+                p.strip() for p in sys.argv[i + 1].split(",") if p.strip()
+            ]
+            print(f"Ignoring players: {', '.join(ignored_players)}")
+
+    output_format = output_format_arg or "gaps"
+
+    return {
+        "max_phase": max_phase,
+        "refresh": refresh,
+        "output_format": output_format,
+        "ignored_players": ignored_players,
+    }
+
+
 def run_rote_platoon():
     """Entry point for rote-platoon CLI command."""
     if len(sys.argv) < 2:
         print(
-            "Usage: rote-platoon <ally_code> [--max-phase N] [--refresh] [--by-territory] [--show-owners] [--ignore-players PLAYER1,PLAYER2,...]"
+            "Usage: rote-platoon <ally_code> [--max-phase N] [--refresh] [--output-format FORMAT] [--ignore-players PLAYER1,PLAYER2,...]"
         )
         sys.exit(1)
 
@@ -475,31 +512,19 @@ def run_rote_platoon():
         sys.exit(1)
 
     ally_code = sys.argv[1]
-    max_phase = None
-    refresh = False
-    by_territory = False
-    show_owners = False
-    ignored_players = []
-    for i, arg in enumerate(sys.argv[2:], start=2):
-        if arg == "--max-phase" and i + 1 < len(sys.argv):
-            max_phase = sys.argv[i + 1]
-        elif arg == "--refresh":
-            refresh = True
-        elif arg == "--by-territory":
-            by_territory = True
-        elif arg == "--show-owners":
-            show_owners = True
-        elif arg == "--ignore-players" and i + 1 < len(sys.argv):
-            ignored_players = sys.argv[i + 1].split(",")
-            print(f"Ignoring players: {', '.join(ignored_players)}")
+    try:
+        options = _parse_rote_platoon_args(start_index=2)
+    except ValueError as e:
+        print(f"Error: {e}")
+        sys.exit(1)
+
     app = RotePlatoonApp(SWGOH_API_KEY)
     app.analyze_guild(
         ally_code,
-        max_phase=max_phase,
-        refresh=refresh,
-        by_territory=by_territory,
-        show_owners=show_owners,
-        ignored_players=ignored_players if "ignored_players" in locals() else None,
+        max_phase=options["max_phase"],
+        refresh=options["refresh"],
+        output_format=options["output_format"],
+        ignored_players=options["ignored_players"],
     )
 
 
@@ -571,7 +596,7 @@ def main():
         if len(sys.argv) < 3:
             print("Error: ally_code is required for rote_platoon command")
             print(
-                "Usage: python app.py rote_platoon <ally_code> [--max-phase N] [--refresh] [--by-territory] [--show-owners]"
+                "Usage: python app.py rote_platoon <ally_code> [--max-phase N] [--refresh] [--output-format FORMAT] [--ignore-players PLAYER1,PLAYER2,...]"
             )
             sys.exit(1)
 
@@ -581,32 +606,19 @@ def main():
             sys.exit(1)
 
         ally_code = sys.argv[2]
-        max_phase = None
-        refresh = False
-        by_territory = False
-        show_owners = False
-        ignored_players = []
-        for i, arg in enumerate(sys.argv[3:], start=3):
-            if arg == "--max-phase" and i + 1 < len(sys.argv):
-                max_phase = sys.argv[i + 1]
-            elif arg == "--refresh":
-                refresh = True
-            elif arg == "--by-territory":
-                by_territory = True
-            elif arg == "--show-owners":
-                show_owners = True
-            elif arg == "--ignore-players" and i + 1 < len(sys.argv):
-                ignored_players = sys.argv[i + 1].split(",")
-                print(f"Ignoring players: {', '.join(ignored_players)}")
+        try:
+            options = _parse_rote_platoon_args(start_index=3)
+        except ValueError as e:
+            print(f"Error: {e}")
+            sys.exit(1)
 
         app = RotePlatoonApp(SWGOH_API_KEY)
         app.analyze_guild(
             ally_code,
-            max_phase=max_phase,
-            refresh=refresh,
-            by_territory=by_territory,
-            show_owners=show_owners,
-            ignored_players=ignored_players,
+            max_phase=options["max_phase"],
+            refresh=options["refresh"],
+            output_format=options["output_format"],
+            ignored_players=options["ignored_players"],
         )
     else:
         print(f"Unknown command: {command}")

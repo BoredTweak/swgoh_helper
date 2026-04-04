@@ -15,7 +15,7 @@ from swgoh_helper.rote_gap_analyzer import GapAnalyzer
 from swgoh_helper.rote_presenter import RotePresenter
 
 
-def test_show_owners_groups_requirements_by_territory():
+def test_output_format_owners_groups_requirements_by_territory():
     """Presenter should list qualifying owners under each territory."""
     requirements = SimpleRoteRequirements(
         last_updated="2026-04-01",
@@ -81,10 +81,100 @@ def test_show_owners_groups_requirements_by_territory():
         matrix,
         gap_analyzer,
         bottleneck_analyzer,
-        show_owners=True,
+        output_format="owners",
     )
 
     assert "**Requirement Owners**" in output
     assert "P1 Mustafar:" in output
     assert "- Darth Vader R7 x2: Alpha, Beta" in output
     assert "- Grand Admiral Thrawn R5: (none)" in output
+
+
+def test_output_format_gaps_only_shows_gap_sections():
+    """Presenter should support rendering only gap-related sections."""
+    requirements = SimpleRoteRequirements(
+        last_updated="2026-04-01",
+        requirements=[
+            UnitRequirement(
+                unit_id="VADER",
+                unit_name="Darth Vader",
+                min_relic=7,
+                path=RotePath.DARK_SIDE,
+                territory="Mustafar",
+                count=2,
+            )
+        ],
+    )
+    matrix = CoverageMatrix(
+        guild_name="Test Guild",
+        guild_id="guild-1",
+        member_count=1,
+        units={
+            "VADER": UnitCoverage(
+                unit_id="VADER",
+                unit_name="Darth Vader",
+                alignment=2,
+                combat_type=CombatType.CHARACTER,
+                players_by_relic={7: []},
+            )
+        },
+    )
+    analyzer = CoverageAnalyzer(matrix, requirements)
+    gap_analyzer = GapAnalyzer(matrix, requirements)
+    bottleneck_analyzer = BottleneckAnalyzer(matrix, requirements)
+
+    output = RotePresenter().format_results(
+        analyzer,
+        matrix,
+        gap_analyzer,
+        bottleneck_analyzer,
+        output_format="gaps",
+    )
+
+    assert "**Gaps**" in output
+    assert "**Coverage**" not in output
+
+
+def test_output_format_coverage_only_shows_coverage_section():
+    """Presenter should support rendering only coverage sections."""
+    requirements = SimpleRoteRequirements(
+        last_updated="2026-04-01",
+        requirements=[
+            UnitRequirement(
+                unit_id="VADER",
+                unit_name="Darth Vader",
+                min_relic=7,
+                path=RotePath.DARK_SIDE,
+                territory="Mustafar",
+                count=2,
+            )
+        ],
+    )
+    matrix = CoverageMatrix(
+        guild_name="Test Guild",
+        guild_id="guild-1",
+        member_count=1,
+        units={
+            "VADER": UnitCoverage(
+                unit_id="VADER",
+                unit_name="Darth Vader",
+                alignment=2,
+                combat_type=CombatType.CHARACTER,
+                players_by_relic={7: []},
+            )
+        },
+    )
+    analyzer = CoverageAnalyzer(matrix, requirements)
+    gap_analyzer = GapAnalyzer(matrix, requirements)
+    bottleneck_analyzer = BottleneckAnalyzer(matrix, requirements)
+
+    output = RotePresenter().format_results(
+        analyzer,
+        matrix,
+        gap_analyzer,
+        bottleneck_analyzer,
+        output_format="coverage",
+    )
+
+    assert "**Coverage**" in output
+    assert "**Gaps**" not in output

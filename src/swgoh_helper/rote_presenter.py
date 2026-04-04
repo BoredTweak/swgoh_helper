@@ -19,26 +19,27 @@ class RotePresenter:
         gap_analyzer: GapAnalyzer,
         bottleneck_analyzer: BottleneckAnalyzer,
         proximity_analyzer: ProximityAnalyzer | None = None,
-        by_territory: bool = False,
-        show_owners: bool = False,
+        output_format: str = "all",
     ) -> str:
         """Generate complete formatted output."""
-        lines = [
-            f"**{matrix.guild_name}** ({matrix.member_count} members)",
-            "",
-            "**Coverage**",
-        ]
+        lines = [f"**{matrix.guild_name}** ({matrix.member_count} members)"]
 
-        lines.extend(self._format_coverage(analyzer))
-        lines.extend(self._format_gaps(gap_analyzer, bottleneck_analyzer))
+        if output_format in {"all", "coverage"}:
+            lines.extend(["", "**Coverage**"])
+            lines.extend(self._format_coverage(analyzer))
 
-        if show_owners:
+        if output_format in {"all", "gaps"}:
+            lines.extend(self._format_gaps(gap_analyzer, bottleneck_analyzer))
+
+        if output_format == "owners":
             lines.extend(self._format_requirement_owners(analyzer))
 
         if proximity_analyzer:
-            if by_territory:
+            if output_format == "farming-by-territory":
                 lines.extend(self._format_farming_by_territory(proximity_analyzer))
-            else:
+            elif output_format == "farming":
+                lines.extend(self._format_farming(proximity_analyzer))
+            elif output_format == "all":
                 lines.extend(self._format_farming(proximity_analyzer))
 
         return "\n".join(lines)
