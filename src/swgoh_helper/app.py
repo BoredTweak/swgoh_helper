@@ -6,6 +6,7 @@ import requests
 from typing import Optional
 
 from .data_access import SwgohDataService
+from .progress import ProgressNotifier
 from .kyrotech_analyzer import (
     KyrotechAnalyzer,
     RosterAnalyzer,
@@ -34,8 +35,9 @@ SWGOH_API_KEY = os.getenv("SWGOH_API_KEY")
 class KyrotechAnalysisApp:
     """Main application orchestrator for kyrotech analysis."""
 
-    def __init__(self, api_key: str):
-        self.service = SwgohDataService(api_key)
+    def __init__(self, api_key: str, progress: Optional[ProgressNotifier] = None):
+        self.progress = progress or ProgressNotifier()
+        self.service = SwgohDataService(api_key, progress=self.progress)
         self.presenter = ResultsPresenter()
 
     def analyze_player(self, ally_code: str, include_unowned: bool = False) -> None:
@@ -171,13 +173,13 @@ class KyrotechAnalysisApp:
             self._handle_general_error(e)
 
     def _fetch_game_data(self, ally_code: str):
-        print("Loading game units data...")
+        self.progress.update("Loading game units data...")
         units_data = self.service.get_all_units()
 
-        print("Loading gear recipe data...")
+        self.progress.update("Loading gear recipe data...")
         gear_data = self.service.get_all_gear()
 
-        print(f"Fetching player data for ally code: {ally_code}...")
+        self.progress.update(f"Fetching player data for ally code: {ally_code}...")
         player_data = self.service.get_player(ally_code)
 
         return units_data, gear_data, player_data
@@ -199,8 +201,9 @@ class KyrotechAnalysisApp:
 class RotePlatoonApp:
     """Application for analyzing Rise of the Empire Territory Battle platoon requirements."""
 
-    def __init__(self, api_key: str):
-        self.service = SwgohDataService(api_key)
+    def __init__(self, api_key: str, progress: Optional[ProgressNotifier] = None):
+        self.progress = progress or ProgressNotifier()
+        self.service = SwgohDataService(api_key, progress=self.progress)
 
     def analyze_guild(
         self,
@@ -222,26 +225,28 @@ class RotePlatoonApp:
                 self.service.get_guild_from_ally_code(ally_code)
             )
 
-            print(f"\n{'='*60}")
-            print(f"Guild: {guild_name}")
-            print(f"Guild ID: {guild_id}")
-            print(f"Members: {len(member_ally_codes)}")
-            print(f"{'='*60}")
+            self.progress.update(f"Guild: {guild_name}")
+            self.progress.update(f"Guild ID: {guild_id}")
+            self.progress.update(f"Members: {len(member_ally_codes)}")
 
             if refresh:
-                print("\nInvalidating player caches (--refresh specified)...")
+                self.progress.update(
+                    "Invalidating player caches (--refresh specified)..."
+                )
                 self.service.invalidate_player_caches(member_ally_codes)
 
-            print("\nLoading unit metadata...")
+            self.progress.update("Loading unit metadata...")
             units_data = self.service.get_all_units()
 
             rosters = self.service.get_guild_rosters(
                 member_ally_codes, delay_seconds=1.0
             )
 
-            print(f"\nSuccessfully loaded data for {len(rosters)} guild members.")
+            self.progress.update(
+                f"Successfully loaded data for {len(rosters)} guild members."
+            )
 
-            print("\nBuilding coverage matrix...")
+            self.progress.update("Building coverage matrix...")
             coverage_matrix = build_coverage_matrix(
                 rosters=rosters,
                 units_data=units_data,
@@ -250,20 +255,24 @@ class RotePlatoonApp:
                 ignored_players=ignored_players,
             )
 
-            print(f"Analyzed {len(coverage_matrix.units)} unique units across roster.")
+            self.progress.update(
+                f"Analyzed {len(coverage_matrix.units)} unique units across roster."
+            )
 
-            print("\nLoading ROTE platoon requirements...")
+            self.progress.update("Loading ROTE platoon requirements...")
             requirements = load_requirements()
 
             if max_phase:
                 requirements = filter_requirements_by_phase(requirements, max_phase)
-                print(
+                self.progress.update(
                     f"Filtered to phase {max_phase}: {len(requirements.requirements)} requirements."
                 )
             else:
-                print(f"Loaded {len(requirements.requirements)} platoon requirements.")
+                self.progress.update(
+                    f"Loaded {len(requirements.requirements)} platoon requirements."
+                )
 
-            print("\nAnalyzing platoon coverage...")
+            self.progress.update("Analyzing platoon coverage...")
             analyzer = CoverageAnalyzer(coverage_matrix, requirements)
 
             gap_analyzer = GapAnalyzer(coverage_matrix, requirements)
@@ -298,8 +307,9 @@ class RotePlatoonApp:
 class RoteFarmAdvisorApp:
     """Application for generating personalized ROTE farming recommendations."""
 
-    def __init__(self, api_key: str):
-        self.service = SwgohDataService(api_key)
+    def __init__(self, api_key: str, progress: Optional[ProgressNotifier] = None):
+        self.progress = progress or ProgressNotifier()
+        self.service = SwgohDataService(api_key, progress=self.progress)
 
     def recommend_for_player(
         self,
@@ -315,20 +325,18 @@ class RoteFarmAdvisorApp:
                 self.service.get_guild_from_ally_code(ally_code)
             )
 
-            print(f"\n{'='*60}")
-            print(f"Guild: {guild_name}")
-            print(f"Guild ID: {guild_id}")
-            print(f"Members: {len(member_ally_codes)}")
-            print(f"{'='*60}")
+            self.progress.update(f"Guild: {guild_name}")
+            self.progress.update(f"Guild ID: {guild_id}")
+            self.progress.update(f"Members: {len(member_ally_codes)}")
 
-            print("\nLoading unit metadata...")
+            self.progress.update("Loading unit metadata...")
             units_data = self.service.get_all_units()
 
-            print("\nLoading guild rosters...")
+            self.progress.update("Loading guild rosters...")
             rosters = self.service.get_guild_rosters(
                 member_ally_codes, delay_seconds=1.0
             )
-            print(f"Loaded data for {len(rosters)} guild members.")
+            self.progress.update(f"Loaded data for {len(rosters)} guild members.")
 
             # Find the target player's roster
             target_roster = None
@@ -344,9 +352,11 @@ class RoteFarmAdvisorApp:
                 )
                 sys.exit(1)
 
-            print(f"\nAnalyzing recommendations for: {target_roster.data.name}")
+            self.progress.update(
+                f"Analyzing recommendations for: {target_roster.data.name}"
+            )
 
-            print("\nBuilding coverage matrix...")
+            self.progress.update("Building coverage matrix...")
             coverage_matrix = build_coverage_matrix(
                 rosters=rosters,
                 units_data=units_data,
@@ -354,16 +364,16 @@ class RoteFarmAdvisorApp:
                 guild_id=guild_id,
             )
 
-            print("\nLoading ROTE platoon requirements...")
+            self.progress.update("Loading ROTE platoon requirements...")
             requirements = load_requirements()
 
             if max_phase:
                 requirements = filter_requirements_by_phase(requirements, max_phase)
-                print(
+                self.progress.update(
                     f"Filtered to phase {max_phase}: {len(requirements.requirements)} requirements."
                 )
 
-            print("\nGenerating personalized recommendations...")
+            self.progress.update("Generating personalized recommendations...")
             from .rote_farm_advisor import FarmAdvisor
 
             advisor = FarmAdvisor(coverage_matrix, requirements)

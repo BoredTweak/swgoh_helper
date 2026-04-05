@@ -34,14 +34,12 @@ class GapAnalyzer:
         self, players_available: int, slots_needed: int
     ) -> GapSeverity:
         """Classify the severity of a gap based on player availability."""
-        if players_available >= slots_needed + 10:
+        if players_available >= slots_needed + self.WARNING_THRESHOLD:
             return GapSeverity.OVERFILLED
         elif players_available >= slots_needed:
             buffer = players_available - slots_needed
-            if buffer >= self.WARNING_THRESHOLD:
+            if buffer >= self.CRITICAL_THRESHOLD:
                 return GapSeverity.HEALTHY
-            elif buffer >= self.CRITICAL_THRESHOLD:
-                return GapSeverity.WARNING
             else:
                 return GapSeverity.WARNING
         else:

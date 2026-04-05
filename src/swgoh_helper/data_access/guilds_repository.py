@@ -102,7 +102,9 @@ class GuildsRepository(BaseRepository):
         Returns:
             Tuple of (guild_id, guild_name, member_ally_codes)
         """
-        print(f"\nFetching guild information for ally code {ally_code}...")
+        self._client.progress.update(
+            f"Fetching guild information for ally code {ally_code}..."
+        )
 
         guild_id = self.get_guild_id_from_player(ally_code)
         guild = self.get_guild(guild_id)
@@ -110,8 +112,10 @@ class GuildsRepository(BaseRepository):
         guild_name = guild.data.name
         member_ally_codes = self.get_member_ally_codes(guild_id)
 
-        print(f"Found guild: {guild_name} (ID: {guild_id})")
-        print(f"Guild has {len(member_ally_codes)} members with ally codes.")
+        self._client.progress.update(f"Found guild: {guild_name} (ID: {guild_id})")
+        self._client.progress.update(
+            f"Guild has {len(member_ally_codes)} members with ally codes."
+        )
 
         return guild_id, guild_name, member_ally_codes
 

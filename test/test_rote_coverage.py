@@ -199,20 +199,13 @@ def test_rote_config_relic_by_layer():
 
 
 def test_relic_tier_conversion():
-    """Test API relic tier to actual relic conversion."""
-    builder = CoverageMatrixBuilder(UnitsResponse(data=[]))
-
-    # None = not G13
-    assert builder._convert_relic_tier(None) is None
-
-    # 1-2 = G13 but no relic
-    assert builder._convert_relic_tier(1) is None
-    assert builder._convert_relic_tier(2) is None
-
-    # 3+ = actual relic
-    assert builder._convert_relic_tier(3) == 1  # R1
-    assert builder._convert_relic_tier(7) == 5  # R5
-    assert builder._convert_relic_tier(11) == 9  # R9
+    """Test API relic tier to UI relic conversion in UnitData."""
+    assert UnitData.api_to_ui_relic_tier(None) is None
+    assert UnitData.api_to_ui_relic_tier(1) is None
+    assert UnitData.api_to_ui_relic_tier(2) is None
+    assert UnitData.api_to_ui_relic_tier(3) == 1  # R1
+    assert UnitData.api_to_ui_relic_tier(7) == 5  # R5
+    assert UnitData.api_to_ui_relic_tier(11) == 9  # R9
 
 
 def test_build_coverage_matrix(mock_units_response, mock_player_roster):

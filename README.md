@@ -139,6 +139,53 @@ uv run pytest test/test_bonus_zone_readiness.py -v -s
 
 See [Bonus Zone Analysis](docs/bonus_zone_analysis.md) for the latest results.
 
+### Personal Farm Recommendations
+
+Get personalized farming recommendations based on your guild's platoon gaps:
+
+```powershell
+uv run rote-farm <ally_code>
+```
+
+Options:
+```powershell
+uv run rote-farm 123-456-789 --max-phase 4
+uv run rote-farm 123-456-789 --max-recommendations 10
+uv run rote-farm 123-456-789 --include-unowned
+```
+
+## Discord Bot
+
+The project includes an optional Discord bot that exposes all commands as slash commands.
+
+### Discord Setup
+
+1. Sync dependencies with the discord extra:
+   ```powershell
+   uv sync --extra discord
+   ```
+
+2. Add your Discord bot token to `.env`:
+   ```
+   DISCORD_TOKEN=your_discord_bot_token_here
+   ```
+
+3. Run the bot:
+   ```powershell
+   uv run --extra discord swgoh-discord
+   ```
+
+### Slash Commands
+
+| Command | Description |
+|---------|-------------|
+| `/kyrotech` | Analyze a player's roster for kyrotech requirements |
+| `/rote-platoon` | Analyze guild for RotE platoon requirements |
+| `/rote-farm` | Personal farm recommendations based on guild needs |
+| `/rote-bonus-readiness` | Analyze guild readiness for RotE bonus zones |
+
+All commands accept the same options as their CLI counterparts (ally code, max-phase, etc.) as slash command parameters.
+
 ## Caching
 
 API responses are cached in `data/` for 1 hour. Delete the folder to force a refresh.

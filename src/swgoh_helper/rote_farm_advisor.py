@@ -10,7 +10,7 @@ Provides personalized farming recommendations for a specific player based on:
 from collections import defaultdict
 from typing import Dict, List, Optional
 
-from .models import PlayerResponse
+from .models import PlayerResponse, UnitData
 from .models.rote import (
     CoverageMatrix,
     GapSeverity,
@@ -108,9 +108,9 @@ class FarmAdvisor:
 
             # Calculate player's progress
             if has_unit:
-                current_relic = player_unit["relic_tier"]
-                gear_level = player_unit["gear_level"]
-                rarity = player_unit["rarity"]
+                current_relic = player_unit.get("relic_tier", -1)
+                gear_level = player_unit.get("gear_level", 0)
+                rarity = player_unit.get("rarity", 0)
             else:
                 current_relic = -1
                 gear_level = 0
@@ -196,19 +196,13 @@ class FarmAdvisor:
         lookup = {}
         for player_unit in player_roster.units:
             unit_data = player_unit.data
-            relic_tier = self._convert_relic_tier(unit_data.relic_tier)
+            relic_tier = UnitData.api_to_ui_relic_tier(unit_data.relic_tier)
             lookup[unit_data.base_id] = {
                 "relic_tier": relic_tier if relic_tier is not None else -1,
                 "gear_level": unit_data.gear_level,
                 "rarity": unit_data.rarity,
             }
         return lookup
-
-    def _convert_relic_tier(self, api_relic_tier: Optional[int]) -> Optional[int]:
-        """Convert API relic tier (2-11) to display tier (1-9)."""
-        if api_relic_tier is None or api_relic_tier < 2:
-            return None
-        return api_relic_tier - 1
 
     def _aggregate_gaps_by_unit(
         self, gaps: List[PlatoonGap]
