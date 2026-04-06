@@ -274,7 +274,7 @@ class RotePresenter:
             lines.append("")
 
         # Summary
-        lines.append(f"**Summary**")
+        lines.append("**Summary**")
         lines.append(f"- Total platoon gaps: {report.total_gaps}")
         lines.append(f"- Units you can help with: {report.units_player_can_help}")
         lines.append(

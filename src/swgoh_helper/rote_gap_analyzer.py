@@ -5,7 +5,8 @@ Analyzes platoon coverage to identify gaps where the guild lacks sufficient
 player coverage for specific unit requirements.
 """
 
-from typing import List
+from collections import defaultdict
+from typing import Dict, List, Optional, Tuple
 
 from .models.rote import (
     SimpleRoteRequirements,
@@ -14,6 +15,9 @@ from .models.rote import (
     GapSeverity,
     PlatoonGap,
 )
+
+UnitGapKey = Tuple[str, int]
+AggregatedGap = Tuple[List[PlatoonGap], int, int]
 
 
 class GapAnalyzer:
@@ -79,20 +83,37 @@ class GapAnalyzer:
             slots_unfillable=slots_unfillable,
         )
 
+    def analyze_all_requirements(self) -> List[PlatoonGap]:
+        """Analyze every requirement and return full coverage snapshots."""
+        return [
+            self.analyze_requirement(requirement)
+            for requirement in self.requirements.requirements
+        ]
+
+    def get_gaps_by_unit(
+        self, gaps: Optional[List[PlatoonGap]] = None
+    ) -> Dict[UnitGapKey, AggregatedGap]:
+        """Aggregate gaps by (unit_id, relic) for cross-consumer consistency."""
+        gaps_to_aggregate = gaps if gaps is not None else self.get_all_gaps()
+        grouped: Dict[UnitGapKey, List[PlatoonGap]] = defaultdict(list)
+        for gap in gaps_to_aggregate:
+            grouped[(gap.unit_id, gap.min_relic)].append(gap)
+
+        aggregated: Dict[UnitGapKey, AggregatedGap] = {}
+        for unit_key, unit_gaps in grouped.items():
+            total_slots = sum(gap.slots_needed for gap in unit_gaps)
+            total_unfillable = sum(gap.slots_unfillable for gap in unit_gaps)
+            aggregated[unit_key] = (unit_gaps, total_slots, total_unfillable)
+        return aggregated
+
     def get_critical_gaps(self) -> List[PlatoonGap]:
         """Get all critical gaps across all paths."""
-        critical = []
-        for req in self.requirements.requirements:
-            gap = self.analyze_requirement(req)
-            if gap.severity == GapSeverity.CRITICAL and gap.is_gap:
-                critical.append(gap)
-        return critical
+        return [
+            gap
+            for gap in self.analyze_all_requirements()
+            if gap.severity == GapSeverity.CRITICAL and gap.is_gap
+        ]
 
     def get_all_gaps(self) -> List[PlatoonGap]:
         """Get all gaps where we can't fill all slots."""
-        gaps = []
-        for req in self.requirements.requirements:
-            gap = self.analyze_requirement(req)
-            if gap.is_gap:
-                gaps.append(gap)
-        return gaps
+        return [gap for gap in self.analyze_all_requirements() if gap.is_gap]

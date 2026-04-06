@@ -7,6 +7,9 @@ from swgoh_discord.utils import (
     DiscordProgressNotifier,
     log_command,
     run_with_progress,
+    safe_defer,
+    safe_followup_send,
+    safe_send_message,
     split_message,
 )
 
@@ -28,8 +31,10 @@ class BonusReadinessCog(commands.Cog):
         guild_id: str,
     ):
         log_command(interaction, "rote-bonus-readiness", guild_id=guild_id)
-        await interaction.response.defer(thinking=True)
         try:
+            if not await safe_defer(interaction, thinking=True):
+                return
+
             notifier = DiscordProgressNotifier()
             app = BonusReadinessApp(progress=notifier)
             output = await run_with_progress(
@@ -37,19 +42,23 @@ class BonusReadinessCog(commands.Cog):
             )
             await self._send_output(interaction, output)
         except FileNotFoundError:
-            await interaction.followup.send(
+            await safe_send_message(
+                interaction,
                 "Error: Guild/player data not found. "
-                "Run `/rote-platoon` first to populate the cache."
+                "Run `/rote-platoon` first to populate the cache.",
+                ephemeral=True,
             )
         except Exception as e:
-            await interaction.followup.send(f"Error: {e}")
+            await safe_send_message(interaction, f"Error: {e}", ephemeral=True)
 
     async def _send_output(self, interaction: discord.Interaction, output: str) -> None:
         if not output.strip():
-            await interaction.followup.send("No results found.")
+            await safe_followup_send(interaction, "No results found.")
             return
         for chunk in split_message(output):
-            await interaction.followup.send(f"```\n{chunk}\n```")
+            sent = await safe_followup_send(interaction, f"```\n{chunk}\n```")
+            if not sent:
+                return
 
 
 async def setup(bot: commands.Bot):

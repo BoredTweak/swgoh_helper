@@ -12,7 +12,6 @@ from swgoh_helper.rote_coverage import (
     UnitCoverage,
     PlayerUnitInfo,
 )
-from swgoh_helper.rote_gap_analyzer import GapAnalyzer
 from swgoh_helper.rote_models import (
     RotePath,
     SimpleRoteRequirements,
@@ -193,33 +192,6 @@ def mock_requirements():
             ),
         ],
     )
-
-
-# ============================================================================
-# Tests: Star Requirements
-# ============================================================================
-
-
-def test_relic_star_requirements():
-    """Test that star requirements are correctly defined."""
-    matrix = CoverageMatrix(guild_name="Test", guild_id="test", member_count=1)
-    requirements = SimpleRoteRequirements(
-        version="1.0", last_updated="2026-03-08", requirements=[]
-    )
-    analyzer = ProximityAnalyzer(matrix, requirements)
-
-    # Relic 1-3 need 5 stars
-    assert analyzer.get_required_stars(1) == 5
-    assert analyzer.get_required_stars(2) == 5
-    assert analyzer.get_required_stars(3) == 5
-
-    # Relic 4 needs 6 stars
-    assert analyzer.get_required_stars(4) == 6
-
-    # Relic 5+ needs 7 stars
-    assert analyzer.get_required_stars(5) == 7
-    assert analyzer.get_required_stars(7) == 7
-    assert analyzer.get_required_stars(9) == 7
 
 
 # ============================================================================

@@ -7,7 +7,7 @@ coverage tracking, gap analysis, and farming recommendations.
 
 from collections import defaultdict
 from enum import Enum
-from typing import Dict, List, Optional, Tuple
+from typing import Dict, List, Optional
 
 from pydantic import BaseModel, Field, computed_field
 
@@ -276,7 +276,30 @@ class UnicornUnit(BaseModel):
 # ===== Proximity/Progress Models =====
 
 
-class PlayerProgress(BaseModel):
+class UnitProgressDisplayMixin:
+    """Shared display helpers for relic/gear progress representations."""
+
+    @staticmethod
+    def status_text(current_relic: int, gear_level: int, rarity: int) -> str:
+        """Compact state text like R5 or G12 7*."""
+        if current_relic >= 0:
+            return f"R{current_relic}"
+        return f"G{gear_level} {rarity}*"
+
+    @staticmethod
+    def path_to_target_text(
+        label: str,
+        current_relic: int,
+        gear_level: int,
+        target_relic: int,
+    ) -> str:
+        """Progress path text like 'Cere R5->R7' or 'Cere G13->R7'."""
+        if current_relic >= 0:
+            return f"{label} R{current_relic}->R{target_relic}"
+        return f"{label} G{gear_level}->R{target_relic}"
+
+
+class PlayerProgress(BaseModel, UnitProgressDisplayMixin):
     """A player's progress toward a specific unit requirement."""
 
     player_name: str
@@ -303,10 +326,7 @@ class PlayerProgress(BaseModel):
     @property
     def status_string(self) -> str:
         """Human-readable status string."""
-        if self.current_relic >= 0:
-            return f"R{self.current_relic}"
-        else:
-            return f"G{self.gear_level} {self.rarity}*"
+        return self.status_text(self.current_relic, self.gear_level, self.rarity)
 
 
 class GapProximityReport(BaseModel):
@@ -348,14 +368,6 @@ class TerritoryRecommendation(BaseModel):
 # ===== Bonus Zone Models =====
 
 
-class PlayerUnitStatus(BaseModel):
-    """Track which units a player has for a bonus zone."""
-
-    player_name: str
-    ally_code: int
-    has_units: Dict[str, Tuple[bool, int]]  # unit_id -> (has_it, relic_tier)
-
-
 class PlayerDistance(BaseModel):
     """A player's distance from qualifying for a bonus zone."""
 
@@ -378,15 +390,13 @@ class BonusZoneReadiness(BaseModel):
 
 
 class PrereqStatus(BaseModel):
-    """Status of unlock prerequisites for a character."""
+    """Distance and missing units for a prerequisite unlock chain."""
 
-    can_unlock: bool  # Already has the character unlocked
-    prereq_distance: float  # Distance to complete all prereqs (0 if can_unlock)
-    missing_prereqs: List[str]  # Names of prereq units not at required level
-    detail: str  # Human-readable summary
+    prereq_distance: float
+    missing_prereqs: List[str]
 
 
-class UnitProgressStatus(BaseModel):
+class UnitProgressStatus(BaseModel, UnitProgressDisplayMixin):
     """Progress data for a single unit (used in bonus zone analysis)."""
 
     has_unit: bool
@@ -395,11 +405,20 @@ class UnitProgressStatus(BaseModel):
     rarity: int  # 1-7 stars
     distance: float  # Distance to R7 requirement
 
+    def progress_text(self, label: str, target_relic: int = 7) -> str:
+        """Format current progress toward a target relic level."""
+        return self.path_to_target_text(
+            label,
+            self.relic_tier,
+            self.gear_level,
+            target_relic,
+        )
+
 
 # ===== Personal Farm Recommendation Models =====
 
 
-class PersonalFarmRecommendation(BaseModel):
+class PersonalFarmRecommendation(BaseModel, UnitProgressDisplayMixin):
     """A personalized farm recommendation for a specific player."""
 
     unit_id: str
@@ -436,10 +455,7 @@ class PersonalFarmRecommendation(BaseModel):
         """Human-readable status string."""
         if not self.has_unit:
             return "Not owned"
-        elif self.current_relic >= 0:
-            return f"R{self.current_relic}"
-        else:
-            return f"G{self.gear_level} {self.rarity}*"
+        return self.status_text(self.current_relic, self.gear_level, self.rarity)
 
     @computed_field
     @property
