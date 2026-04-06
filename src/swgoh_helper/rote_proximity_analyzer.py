@@ -9,7 +9,7 @@ import json
 from pathlib import Path
 from typing import Dict, List, Optional, Tuple
 
-from .constants import MAX_PLAYERS_PER_UNIT
+from .constants import MAX_PLAYERS_PER_UNIT, RELIC_STAR_REQUIREMENTS
 from .models.rote import (
     SimpleRoteRequirements,
     CoverageMatrix,
@@ -22,6 +22,7 @@ from .models.rote import (
     TerritoryRecommendation,
 )
 from .rote_gap_analyzer import GapAnalyzer
+from .progress_scorer import ProgressScorer
 
 
 def load_relic_costs(data_path: Optional[Path] = None) -> Dict[int, float]:
@@ -68,21 +69,6 @@ class ProximityAnalyzer:
     - Relic 5-9: Requires 7 stars
     """
 
-    # Star requirements for each relic level
-    RELIC_STAR_REQUIREMENTS = {
-        0: 0,  # G13 no relic
-        1: 5,
-        2: 5,
-        3: 5,
-        4: 6,
-        5: 7,
-        6: 7,
-        7: 7,
-        8: 7,
-        9: 7,
-        10: 7,
-    }
-
     # Weight factors for non-relic distance calculation
     GEAR_WEIGHT = 2.0  # Each gear level to G13 (roughly equivalent to R1-R2)
     STAR_WEIGHT = 5.0  # Each missing star (significant farming)
@@ -99,40 +85,13 @@ class ProximityAnalyzer:
         self.relic_costs = (
             relic_costs if relic_costs is not None else load_relic_costs()
         )
-
-    def get_required_stars(self, relic_level: int) -> int:
-        """Get the minimum star level required for a relic level."""
-        return self.RELIC_STAR_REQUIREMENTS.get(relic_level, 7)
-
-    def calculate_relic_upgrade_cost(
-        self, current_relic: int, target_relic: int
-    ) -> float:
-        """
-        Calculate the total cost to upgrade from current_relic to target_relic.
-
-        Uses the per-tier weights from relic_costs.json which account for
-        material scarcity (higher tiers cost more due to rare materials).
-
-        Args:
-            current_relic: Current relic level (-1 for no relic, 0 for G13 unlocked)
-            target_relic: Target relic level (1-10)
-
-        Returns:
-            Sum of weights for each tier that needs to be upgraded.
-        """
-        if current_relic >= target_relic:
-            return 0.0
-
-        # Start from tier 1 if not reliced yet
-        start_tier = max(1, current_relic + 1)
-
-        total_cost = 0.0
-        for tier in range(start_tier, target_relic + 1):
-            total_cost += self.relic_costs.get(
-                tier, 10.0
-            )  # Default to 10 if tier unknown
-
-        return total_cost
+        self.progress_scorer = ProgressScorer(
+            relic_weight=1.0,
+            gear_weight=self.GEAR_WEIGHT,
+            star_weight=self.STAR_WEIGHT,
+            relic_star_requirements=RELIC_STAR_REQUIREMENTS,
+            relic_costs=self.relic_costs,
+        )
 
     def calculate_player_progress(
         self,
@@ -142,7 +101,7 @@ class ProximityAnalyzer:
         required_relic: int,
     ) -> PlayerProgress:
         """Calculate a player's progress toward a relic requirement."""
-        required_stars = self.get_required_stars(required_relic)
+        required_stars = self.progress_scorer.required_stars_for_relic(required_relic)
 
         # Calculate gaps
         star_gap = max(0, required_stars - player.rarity)
@@ -176,7 +135,7 @@ class ProximityAnalyzer:
                 stage = ProgressStage.GEARING
 
         # Calculate distance score
-        relic_cost = self.calculate_relic_upgrade_cost(
+        relic_cost = self.progress_scorer.relic_upgrade_cost(
             player.relic_tier if player.relic_tier >= 0 else 0, required_relic
         )
         distance_score = (

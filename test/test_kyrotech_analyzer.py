@@ -9,7 +9,6 @@ from swgoh_helper.kyrotech_analyzer import (
     MAX_GEAR_TIER,
 )
 from swgoh_helper.models import (
-    CharacterKyrotechResult,
     GearPiece,
     GearIngredient,
     GearTier,

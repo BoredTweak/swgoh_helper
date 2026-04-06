@@ -8,6 +8,7 @@ from swgoh_helper.models.rote import (
     GapSeverity,
     PersonalFarmRecommendation,
     PersonalFarmReport,
+    PlatoonGap,
     PlayerUnitInfo,
     RotePath,
     SimpleRoteRequirements,
@@ -197,6 +198,7 @@ class TestFarmAdvisor:
         # Note: based on our mock, player has R5 for Revan
         recommended_unit_ids = [r.unit_id for r in report.recommendations]
         assert "DARTHREVAN" not in recommended_unit_ids
+        assert "Darth Revan R5" in report.already_qualified
 
     def test_gap_units_included_in_recommendations(
         self, sample_coverage_matrix, sample_requirements, sample_player_roster
@@ -318,6 +320,71 @@ class TestFarmAdvisor:
         )
         assert ugnaught_rec is not None
         assert ugnaught_rec.has_unit is False
+
+    def test_bonus_zone_need_is_lowered_when_not_unlockable(self):
+        matrix = CoverageMatrix(guild_name="Test", guild_id="g1", member_count=50)
+        requirements = SimpleRoteRequirements(version="1.0", last_updated="2026-01-01")
+        advisor = FarmAdvisor(matrix, requirements)
+        zeffo_gap = PlatoonGap(
+            unit_id="TEST",
+            unit_name="Test Unit",
+            path=RotePath.LIGHT_SIDE,
+            territory="Zeffo",
+            min_relic=7,
+            slots_needed=1,
+            players_available=0,
+            player_names=[],
+            coverage_ratio=0.0,
+            severity=GapSeverity.CRITICAL,
+            slots_unfillable=1,
+        )
+        adjusted = advisor._apply_bonus_zone_weighting(
+            1.0,
+            [zeffo_gap],
+            {"Zeffo": (False, 10, 30), "Mandalore": (True, 25, 25)},
+        )
+        assert adjusted == advisor.BONUS_ZONE_DISABLED_MULTIPLIER
+
+    def test_bonus_unlock_targets_added_when_locked(
+        self, sample_coverage_matrix, sample_requirements, sample_player_roster
+    ):
+        advisor = FarmAdvisor(sample_coverage_matrix, sample_requirements)
+        report = advisor.get_player_recommendations(
+            sample_player_roster,
+            max_recommendations=40,
+            include_unowned=True,
+        )
+        recommended = {rec.unit_id for rec in report.recommendations}
+        expected_unlock_targets = {
+            "CEREJUNDA",
+            "CALKESTIS",
+            "JEDIKNIGHTCAL",
+            "MANDALORBOKATAN",
+            "THEMANDALORIANBESKARARMOR",
+        }
+        assert expected_unlock_targets & recommended
+
+    def test_limited_availability_suggestion_uses_lower_need_weight(
+        self, sample_coverage_matrix, sample_requirements
+    ):
+        advisor = FarmAdvisor(sample_coverage_matrix, sample_requirements)
+        roster = MagicMock()
+        roster.data.name = "LimitedPlayer"
+        roster.data.ally_code = 777777777
+        roster.units = []
+
+        report = advisor.get_player_recommendations(
+            roster,
+            max_recommendations=100,
+            include_unowned=True,
+        )
+
+        limited = next(
+            (r for r in report.recommendations if r.unit_id == "DARTHTRAYA"),
+            None,
+        )
+        assert limited is not None
+        assert limited.need_score <= advisor.LIMITED_AVAILABILITY_NEED_SCALE
 
 
 class TestPersonalFarmRecommendation:

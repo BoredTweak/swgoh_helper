@@ -11,18 +11,6 @@ KYROTECH_SALVAGE_IDS = {
 
 MAX_GEAR_TIER = 13
 
-# Unit IDs for bonus zone unlock requirements
-ZEFFO_UNITS = {
-    "CEREJUNDA": "Cere Junda",
-    "CALKESTIS": "Cal Kestis",
-    "JEDIKNIGHTCAL": "Jedi Knight Cal Kestis",
-}
-
-MANDALORE_UNITS = {
-    "MANDALORBOKATAN": "Bo-Katan (Mand'alor)",
-    "THEMANDALORIANBESKARARMOR": "The Mandalorian (Beskar Armor)",
-}
-
 # Bo-Katan (Mand'alor) unlock requirements: R7 for all of these
 BOKATAN_PREREQS = {
     "KELLERANBEQ": "Kelleran Beq",
@@ -71,6 +59,7 @@ RELIC_STAR_REQUIREMENTS = {
     7: 7,
     8: 7,
     9: 7,
+    10: 7,
 }
 
 # Farming recommendations

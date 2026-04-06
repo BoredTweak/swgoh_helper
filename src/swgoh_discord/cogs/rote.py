@@ -9,6 +9,9 @@ from swgoh_discord.utils import (
     DiscordProgressNotifier,
     log_command,
     run_with_progress,
+    safe_defer,
+    safe_followup_send,
+    safe_send_message,
     split_message,
 )
 
@@ -47,11 +50,14 @@ class RoteCog(commands.Cog):
             output_format=output_format,
             ignored_players=ignored_players,
         )
-        await interaction.response.defer(thinking=True)
         try:
+            if not await safe_defer(interaction, thinking=True):
+                return
+
             if output_format not in VALID_ROTE_OUTPUT_FORMATS:
-                await interaction.followup.send(
-                    f"Invalid output format. Expected one of: {', '.join(VALID_ROTE_OUTPUT_FORMATS)}"
+                await safe_followup_send(
+                    interaction,
+                    f"Invalid output format. Expected one of: {', '.join(VALID_ROTE_OUTPUT_FORMATS)}",
                 )
                 return
 
@@ -75,7 +81,7 @@ class RoteCog(commands.Cog):
             )
             await self._send_output(interaction, output)
         except Exception as e:
-            await interaction.followup.send(f"Error: {e}")
+            await safe_send_message(interaction, f"Error: {e}", ephemeral=True)
 
     @app_commands.command(
         name="rote-farm",
@@ -103,8 +109,10 @@ class RoteCog(commands.Cog):
             max_recommendations=max_recommendations,
             include_unowned=include_unowned,
         )
-        await interaction.response.defer(thinking=True)
         try:
+            if not await safe_defer(interaction, thinking=True):
+                return
+
             notifier = DiscordProgressNotifier()
             app = RoteFarmAdvisorApp(self.api_key, progress=notifier)
             output = await run_with_progress(
@@ -118,14 +126,16 @@ class RoteCog(commands.Cog):
             )
             await self._send_output(interaction, output)
         except Exception as e:
-            await interaction.followup.send(f"Error: {e}")
+            await safe_send_message(interaction, f"Error: {e}", ephemeral=True)
 
     async def _send_output(self, interaction: discord.Interaction, output: str) -> None:
         if not output.strip():
-            await interaction.followup.send("No results found.")
+            await safe_followup_send(interaction, "No results found.")
             return
         for chunk in split_message(output):
-            await interaction.followup.send(f"```\n{chunk}\n```")
+            sent = await safe_followup_send(interaction, f"```\n{chunk}\n```")
+            if not sent:
+                return
 
 
 async def setup(bot: commands.Bot, api_key: str):

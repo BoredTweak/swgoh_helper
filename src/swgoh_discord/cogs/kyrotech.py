@@ -8,6 +8,9 @@ from swgoh_discord.utils import (
     DiscordProgressNotifier,
     log_command,
     run_with_progress,
+    safe_defer,
+    safe_followup_send,
+    safe_send_message,
     split_message,
 )
 
@@ -19,12 +22,13 @@ class KyrotechCog(commands.Cog):
 
     @app_commands.command(
         name="kyrotech",
-        description="Analyze a player's roster for kyrotech requirements",
+        description="Analyze kyrotech needs; useful for choosing Lightspeed token targets",
     )
     @app_commands.describe(
         ally_code="Player ally code (e.g. 123456789)",
         faction="Filter by faction name (e.g. Empire, Rebel)",
         include_unowned="Include characters the player doesn't own",
+        verbose="Show all characters instead of default top 10",
     )
     async def kyrotech(
         self,
@@ -32,6 +36,7 @@ class KyrotechCog(commands.Cog):
         ally_code: str,
         faction: Optional[str] = None,
         include_unowned: bool = False,
+        verbose: bool = False,
     ):
         log_command(
             interaction,
@@ -39,9 +44,12 @@ class KyrotechCog(commands.Cog):
             ally_code=ally_code,
             faction=faction,
             include_unowned=include_unowned,
+            verbose=verbose,
         )
-        await interaction.response.defer(thinking=True)
         try:
+            if not await safe_defer(interaction, thinking=True):
+                return
+
             notifier = DiscordProgressNotifier()
             app = KyrotechAnalysisApp(self.api_key, progress=notifier)
             if faction:
@@ -51,6 +59,7 @@ class KyrotechCog(commands.Cog):
                     ally_code,
                     faction,
                     include_unowned,
+                    verbose,
                     progress=notifier,
                 )
             else:
@@ -59,18 +68,21 @@ class KyrotechCog(commands.Cog):
                     app.analyze_player,
                     ally_code,
                     include_unowned,
+                    verbose,
                     progress=notifier,
                 )
             await self._send_output(interaction, output)
         except Exception as e:
-            await interaction.followup.send(f"Error: {e}")
+            await safe_send_message(interaction, f"Error: {e}", ephemeral=True)
 
     async def _send_output(self, interaction: discord.Interaction, output: str) -> None:
         if not output.strip():
-            await interaction.followup.send("No results found.")
+            await safe_followup_send(interaction, "No results found.")
             return
         for chunk in split_message(output):
-            await interaction.followup.send(f"```\n{chunk}\n```")
+            sent = await safe_followup_send(interaction, f"```\n{chunk}\n```")
+            if not sent:
+                return
 
 
 async def setup(bot: commands.Bot, api_key: str):

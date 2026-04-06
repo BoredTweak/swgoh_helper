@@ -2,7 +2,6 @@
 Unit tests for the SWGOH.gg data access layer.
 """
 
-import pytest
 from unittest.mock import Mock, patch
 
 from swgoh_helper.data_access import (
@@ -16,15 +15,6 @@ from swgoh_helper.data_access import (
     StatDefinitionsRepository,
 )
 from swgoh_helper.cache_manager import CacheManager
-from swgoh_helper.models import (
-    Unit,
-    UnitsResponse,
-    PlayerResponse,
-    PlayerData,
-    GuildResponse,
-    GuildData,
-    GearPiece,
-)
 
 
 class TestBaseApiClient:

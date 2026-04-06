@@ -1,12 +1,14 @@
 import os
 
 import discord
+from discord import app_commands
 from discord.ext import commands
 import dotenv
 
 from swgoh_discord.cogs.kyrotech import setup as kyrotech_setup
 from swgoh_discord.cogs.rote import setup as rote_setup
 from swgoh_discord.cogs.bonus_readiness import setup as bonus_readiness_setup
+from swgoh_discord.utils import handle_app_command_error
 
 
 def create_bot() -> commands.Bot:
@@ -32,6 +34,14 @@ async def on_ready():
 
     synced = await bot.tree.sync()
     print(f"Synced {len(synced)} slash commands.")
+
+
+@bot.tree.error
+async def on_app_command_error(
+    interaction: discord.Interaction,
+    error: app_commands.AppCommandError,
+):
+    await handle_app_command_error(interaction, error)
 
 
 def main():
