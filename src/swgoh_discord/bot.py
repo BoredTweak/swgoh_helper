@@ -18,11 +18,17 @@ def create_bot() -> commands.Bot:
 
 
 bot = create_bot()
+_cogs_registered = False
 
 
 @bot.event
 async def on_ready():
+    global _cogs_registered
     print(f"Logged in as {bot.user} (ID: {bot.user.id})")
+
+    if _cogs_registered:
+        print("Reconnected — skipping cog registration.")
+        return
 
     api_key = os.getenv("SWGOH_API_KEY")
     if not api_key:
@@ -31,6 +37,7 @@ async def on_ready():
     await kyrotech_setup(bot, api_key)
     await rote_setup(bot, api_key)
     await bonus_readiness_setup(bot)
+    _cogs_registered = True
 
     synced = await bot.tree.sync()
     print(f"Synced {len(synced)} slash commands.")

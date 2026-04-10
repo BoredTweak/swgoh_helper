@@ -13,7 +13,7 @@ class _FakeRosterAnalyzer:
     def build_units_lookup(self, _units_data):
         return {}
 
-    def analyze_all_characters(self, _player_units, _units_by_id):
+    def analyze_all_characters(self, _player_units, _units_by_id, **_kwargs):
         return [
             CharacterKyrotechResult(
                 name="Owned A",

@@ -5,7 +5,10 @@ Service layer for analyzing kyrotech gear requirements in SWGOH.
 from typing import Dict, List, Optional, Tuple
 from collections import defaultdict
 
-from .constants import KYROTECH_SALVAGE_IDS, MAX_GEAR_TIER
+from .constants import (
+    KYROTECH_SALVAGE_IDS,
+    MAX_GEAR_TIER,
+)
 from .models import (
     CharacterKyrotechResult,
     CombatType,
@@ -111,6 +114,7 @@ class RosterAnalyzer:
 
     # Starting gear tier for unowned character analysis (kyrotech starts at G9)
     UNOWNED_START_GEAR = 1
+    ERA_CATEGORY_EXACT = {"era_unit"}
 
     def __init__(self, kyrotech_analyzer: KyrotechAnalyzer):
         self.kyrotech_analyzer = kyrotech_analyzer
@@ -134,6 +138,7 @@ class RosterAnalyzer:
         units_by_id: Dict[str, Unit],
         include_owned: bool = True,
         include_unowned: bool = True,
+        exclude_era_units: bool = False,
     ) -> List[CharacterKyrotechResult]:
         """Analyze kyrotech needs for all characters, including unowned ones.
 
@@ -152,6 +157,9 @@ class RosterAnalyzer:
         # Analyze owned characters
         if include_owned:
             for player_unit in player_units:
+                unit_info = units_by_id.get(player_unit.data.base_id)
+                if exclude_era_units and unit_info and self._is_era_unit(unit_info):
+                    continue
                 result = self._analyze_owned_character(player_unit, units_by_id)
                 if result:
                     results.append(result)
@@ -164,11 +172,23 @@ class RosterAnalyzer:
                 # Skip ships
                 if unit_info.combat_type == CombatType.SHIP:
                     continue
+                if exclude_era_units and self._is_era_unit(unit_info):
+                    continue
                 result = self._analyze_unowned_character(unit_info)
                 if result:
                     results.append(result)
 
         return sorted(results, key=lambda x: x.total_kyrotech, reverse=True)
+
+    def _is_era_unit(self, unit_info: Unit) -> bool:
+        for category in unit_info.categories:
+            normalized = category.strip().lower()
+            if normalized in self.ERA_CATEGORY_EXACT:
+                return True
+            tokens = normalized.replace("_", " ").replace("-", " ").split()
+            if "era" in tokens:
+                return True
+        return False
 
     def analyze_faction_all_characters(
         self,
@@ -177,6 +197,7 @@ class RosterAnalyzer:
         faction: str,
         include_owned: bool = True,
         include_unowned: bool = True,
+        exclude_era_units: bool = False,
     ) -> List[CharacterKyrotechResult]:
         """Analyze kyrotech needs for all characters in a faction, including unowned.
 
@@ -191,7 +212,11 @@ class RosterAnalyzer:
             List of CharacterKyrotechResult sorted by total kyrotech descending
         """
         all_results = self.analyze_all_characters(
-            player_units, units_by_id, include_owned, include_unowned
+            player_units,
+            units_by_id,
+            include_owned,
+            include_unowned,
+            exclude_era_units,
         )
 
         # Filter by faction

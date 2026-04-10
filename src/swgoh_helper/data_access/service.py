@@ -41,7 +41,6 @@ class SwgohDataService:
         >>> service = SwgohDataService(api_key="your_key")
         >>> player = service.get_player("123456789")
         >>> units = service.get_all_units()
-        >>> rebels = service.get_units_by_category("Rebel")
     """
 
     def __init__(
@@ -124,12 +123,6 @@ class SwgohDataService:
     def get_unit_by_id(self, base_id: str) -> Optional[Unit]:
         """Get a specific unit by base_id."""
         return self._units.get_unit_by_id(base_id)
-
-    def get_units_by_category(
-        self, category: str, combat_type: Optional[int] = None
-    ) -> List[Unit]:
-        """Get all units in a category."""
-        return self._units.get_units_by_category(category, combat_type)
 
     # --- Players ---
 

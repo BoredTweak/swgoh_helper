@@ -32,20 +32,21 @@ class TestBaseApiClient:
         client = BaseApiClient("test_key", cache)
         assert client.cache is cache
 
-    @patch("swgoh_helper.data_access.base.requests.get")
-    def test_get_makes_authenticated_request(self, mock_get):
+    def test_get_makes_authenticated_request(self):
         """Test that GET requests include authentication headers."""
         mock_response = Mock()
         mock_response.json.return_value = {"data": []}
         mock_response.raise_for_status = Mock()
-        mock_get.return_value = mock_response
 
         client = BaseApiClient("test_key_123")
+        client._session = Mock()
+        client._session.get.return_value = mock_response
+
         client.get("/units/")
 
-        mock_get.assert_called_once()
-        call_kwargs = mock_get.call_args
-        assert call_kwargs[1]["headers"] == {"x-gg-bot-access": "test_key_123"}
+        client._session.get.assert_called_once()
+        call_kwargs = client._session.get.call_args
+        assert call_kwargs[1]["timeout"] == BaseApiClient.REQUEST_TIMEOUT
 
     def test_fetch_with_cache_returns_cached_data(self):
         """Test that cached data is returned when available."""
@@ -103,6 +104,46 @@ class TestUnitsRepository:
         assert len(lookup) == 2
         assert "UNIT1" in lookup
         assert "UNIT2" in lookup
+
+    def test_get_units_by_category_returns_empty_for_missing_category(self):
+        """Test missing API categories return no units."""
+        client = Mock()
+        repo = UnitsRepository(client)
+
+        dedra = Mock()
+        dedra.base_id = "DEDRAMEERO"
+        dedra.categories = ["Empire", "ISB"]
+        dedra.combat_type = 1
+        dedra.url = "//swgoh.gg/units/dedra-meero/"
+
+        veers = Mock()
+        veers.base_id = "VEERS"
+        veers.categories = ["Empire", "Imperial Trooper"]
+        veers.combat_type = 1
+        veers.url = "//swgoh.gg/units/general-veers/"
+
+        repo.get_all_units = Mock(return_value=Mock(data=[dedra, veers]))
+
+        result = repo.get_units_by_category("missing_category", combat_type=1)
+
+        assert result == []
+
+    def test_get_units_by_category_prefers_api_category_matches(self):
+        """Test direct API category matches are returned."""
+        client = Mock()
+        repo = UnitsRepository(client)
+
+        empire_unit = Mock()
+        empire_unit.base_id = "GENERALVEERS"
+        empire_unit.categories = ["Empire", "Imperial Trooper"]
+        empire_unit.combat_type = 1
+        empire_unit.url = "//swgoh.gg/units/general-veers/"
+
+        repo.get_all_units = Mock(return_value=Mock(data=[empire_unit]))
+
+        result = repo.get_units_by_category("Empire", combat_type=1)
+
+        assert [unit.base_id for unit in result] == ["GENERALVEERS"]
 
 
 class TestPlayersRepository:

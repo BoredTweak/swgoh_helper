@@ -66,7 +66,7 @@ class KyrotechAnalysisApp:
             units_by_id = roster_analyzer.build_units_lookup(units_data.data)
             self.progress.update("Analyzing all characters for totals...")
             all_results = roster_analyzer.analyze_all_characters(
-                player_data.units, units_by_id
+                player_data.units, units_by_id, exclude_era_units=True
             )
 
             owned_results = [r for r in all_results if r.is_owned]
@@ -137,6 +137,7 @@ class KyrotechAnalysisApp:
                 faction,
                 include_owned=True,
                 include_unowned=True,
+                exclude_era_units=True,
             )
 
             if results:
