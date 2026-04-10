@@ -57,6 +57,8 @@ class CacheManager:
         with open(cache_path, "w", encoding="utf-8") as f:
             json.dump(cache_data, f, indent=2, ensure_ascii=False)
 
+        self.prune_expired()
+
     def invalidate(self, cache_key: str) -> None:
         """Remove a cache entry."""
         cache_path = self._get_cache_path(cache_key)
@@ -67,6 +69,29 @@ class CacheManager:
         """Remove all cache entries."""
         for cache_file in self.cache_dir.glob("*.json"):
             cache_file.unlink()
+
+    def prune_expired(self) -> int:
+        """Delete cached files whose timestamps have exceeded the TTL.
+
+        Only removes files that contain the ``{"timestamp": ...}`` wrapper
+        written by :meth:`set`, so static data files are left untouched.
+
+        Returns:
+            Number of files removed.
+        """
+        removed = 0
+        for cache_file in self.cache_dir.glob("*.json"):
+            try:
+                cache_data = self._load_cache_file(cache_file)
+                timestamp = cache_data.get("timestamp")
+                if timestamp is None:
+                    continue
+                if not self._is_timestamp_valid(timestamp):
+                    cache_file.unlink()
+                    removed += 1
+            except (json.JSONDecodeError, KeyError, ValueError, OSError):
+                continue
+        return removed
 
     def _load_cache_file(self, cache_path: Path) -> dict:
         with open(cache_path, "r", encoding="utf-8") as f:

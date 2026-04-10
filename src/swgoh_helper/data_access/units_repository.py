@@ -119,7 +119,7 @@ class UnitsRepository(BaseRepository):
             List of units matching the criteria
         """
         units = self.get_all_units()
-        result = []
+        result: List[Unit] = []
         for unit in units.data:
             if category.lower() in [c.lower() for c in unit.categories]:
                 if combat_type is None or unit.combat_type == combat_type:

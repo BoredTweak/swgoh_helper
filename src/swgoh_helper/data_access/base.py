@@ -29,6 +29,8 @@ class BaseApiClient:
 
     BASE_URL = "https://swgoh.gg/api"
 
+    REQUEST_TIMEOUT = (10, 120)
+
     def __init__(
         self,
         api_key: str,
@@ -44,7 +46,8 @@ class BaseApiClient:
             progress: Optional progress notifier for status updates
         """
         self._api_key = api_key
-        self._headers = {"x-gg-bot-access": api_key}
+        self._session = requests.Session()
+        self._session.headers.update({"x-gg-bot-access": api_key})
         self._cache = cache_manager or CacheManager()
         self._progress = progress or ProgressNotifier()
 
@@ -75,7 +78,7 @@ class BaseApiClient:
             requests.exceptions.HTTPError: For non-2xx responses
         """
         url = f"{self.BASE_URL}{endpoint}"
-        response = requests.get(url, headers=self._headers, params=params)
+        response = self._session.get(url, params=params, timeout=self.REQUEST_TIMEOUT)
         response.raise_for_status()
         return response.json()
 
