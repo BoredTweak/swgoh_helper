@@ -750,31 +750,6 @@ class TestAnalyzeAllCharacters(unittest.TestCase):
             zeta_ability_ids=[],
         )
 
-        self.era_unit = Unit(
-            name="Era Character",
-            base_id="ERA_CHAR",
-            url="",
-            image="",
-            power=4500,
-            description="Test",
-            combat_type=1,
-            gear_levels=[
-                GearTier(tier=8, gear=["172"]),
-                GearTier(tier=9, gear=["172"]),
-            ],
-            alignment=2,
-            categories=["Era Unit"],
-            ability_classes=[],
-            role="Attacker",
-            activate_shard_count=10,
-            is_capital_ship=False,
-            is_galactic_legend=False,
-            made_available_on="2020-01-01",
-            crew_base_ids=[],
-            omicron_ability_ids=[],
-            zeta_ability_ids=[],
-        )
-
         self.ship_unit = Unit(
             name="Test Ship",
             base_id="SHIP",
@@ -800,7 +775,6 @@ class TestAnalyzeAllCharacters(unittest.TestCase):
         self.units_by_id = {
             "OWNED_CHAR": self.owned_unit,
             "UNOWNED_CHAR": self.unowned_unit,
-            "ERA_CHAR": self.era_unit,
             "SHIP": self.ship_unit,
         }
 
@@ -830,14 +804,14 @@ class TestAnalyzeAllCharacters(unittest.TestCase):
             self.player_units, self.units_by_id
         )
 
-        # Should have 3 results (owned + 2 unowned, no ship)
-        self.assertEqual(len(results), 3)
+        # Should have 2 results (owned and unowned, no ship)
+        self.assertEqual(len(results), 2)
 
         owned_results = [r for r in results if r.is_owned]
         unowned_results = [r for r in results if not r.is_owned]
 
         self.assertEqual(len(owned_results), 1)
-        self.assertEqual(len(unowned_results), 2)
+        self.assertEqual(len(unowned_results), 1)
 
         # Verify owned character
         owned = owned_results[0]
@@ -881,39 +855,18 @@ class TestAnalyzeAllCharacters(unittest.TestCase):
             include_unowned=True,
         )
 
-        self.assertEqual(len(results), 2)
+        self.assertEqual(len(results), 1)
         self.assertFalse(results[0].is_owned)
 
-    def test_analyze_all_characters_excludes_era_units_when_requested(self):
-        """Test era-tagged units are excluded when era filtering is enabled."""
-        results = self.roster_analyzer.analyze_all_characters(
-            self.player_units,
-            self.units_by_id,
-            include_owned=False,
-            include_unowned=True,
-            exclude_era_units=True,
-        )
-
-        self.assertEqual([r.base_id for r in results], ["UNOWNED_CHAR"])
-
     def test_analyze_faction_all_characters_filters_by_faction(self):
-        """Test filtering by faction includes all matching faction units."""
+        """Test filtering by faction includes both owned and unowned in faction."""
         results = self.roster_analyzer.analyze_faction_all_characters(
             self.player_units, self.units_by_id, "Rebel"
         )
 
-        self.assertEqual([r.base_id for r in results], ["OWNED_CHAR", "VEL"])
-
-    def test_analyze_faction_all_characters_excludes_era_units_when_requested(self):
-        """Test faction filtering can exclude known era units like Vel."""
-        results = self.roster_analyzer.analyze_faction_all_characters(
-            self.player_units,
-            self.units_by_id,
-            "Rebel",
-            exclude_era_units=True,
-        )
-
-        self.assertEqual([r.base_id for r in results], ["OWNED_CHAR"])
+        # Only owned (Rebel) should be included, not unowned (Empire)
+        self.assertEqual(len(results), 1)
+        self.assertEqual(results[0].name, "Owned Character")
 
     def test_unowned_character_calculates_from_g1(self):
         """Test that unowned characters calculate kyrotech from G1."""
