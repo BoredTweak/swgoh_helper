@@ -62,8 +62,7 @@ Choose a specific output format:
 uv run rote-platoon 123-456-789 --output-format gaps
 uv run rote-platoon 123-456-789 --output-format coverage
 uv run rote-platoon 123-456-789 --output-format owners
-uv run rote-platoon 123-456-789 --output-format farming
-uv run rote-platoon 123-456-789 --output-format farming-by-territory
+uv run rote-platoon 123-456-789 --output-format mine
 uv run rote-platoon 123-456-789 --output-format all
 ```
 
@@ -83,33 +82,13 @@ Valid phases: `1`, `2`, `3`, `3b`, `4`, `4b`, `5`, `5b`, `6`
 - `gaps` (default): critical gaps + limited availability units
 - `coverage`: territory coverage summary
 - `owners`: qualifying owners for each requirement, grouped by territory
-- `farming`: farming recommendations grouped by unit
-- `farming-by-territory`: farming recommendations grouped by planet
-- `all`: coverage + gaps + farming
+- `mine`: planet-centric list of requirements you can cover, with limited-availability callouts
+- `all`: coverage + gaps
 
 **Optional flags:**
 - `--ignore-players` excludes players from analysis by name or ally code (supports `123456789` or `123-456-789`)
 
-**How farming recommendations work:**
-- Only units with unfillable platoon slots are included.
-- Candidates are guild members who own the unit but do not yet meet the relic requirement.
-- Recommendations are ranked by a distance score that combines:
-   - relic upgrade cost weights from `data/relic_costs.json`
-   - `+2.0` per gear level needed to reach G13
-   - `+5.0` per missing star
-- Players with the same distance score are grouped together.
-- The unit-grouped farming output shows up to 15 recommendations and up to 3 player groups per unit.
-- The territory-grouped farming output shows recommendations by planet and up to 2 player groups per unit.
-
-**Current farming labels:**
-- `+XR`: already reliced, needs more relic levels
-- `at G13`: at Gear 13 but not reliced yet
-- `needs G13 (+Xg)`: below Gear 13
-- `needs X★`: star-gated before the required relic level
-
-**Aggregation rules:**
-- In `--output-format farming`, the same unit/relic requirement is combined across territories before ranking.
-- In `--output-format farming-by-territory`, recommendations stay grouped by planet and show each unit's unfilled slot count.
+Farming recommendations have moved to `rote-farm`.
 
 ### Bonus Zone Readiness Analysis
 

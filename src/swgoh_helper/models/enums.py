@@ -39,8 +39,7 @@ class RoteOutputFormat(str, Enum):
     COVERAGE = "coverage"
     GAPS = "gaps"
     OWNERS = "owners"
-    FARMING = "farming"
-    FARMING_BY_TERRITORY = "farming-by-territory"
+    MINE = "mine"
 
 
 VALID_ROTE_OUTPUT_FORMATS = {output_format.value for output_format in RoteOutputFormat}
