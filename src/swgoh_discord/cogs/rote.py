@@ -29,7 +29,7 @@ class RoteCog(commands.Cog):
         ally_code="Player ally code (e.g. 123456789)",
         max_phase="Limit analysis to phases up to N (e.g. 4, 3b, 5)",
         refresh="Force fresh data from API (ignore cache)",
-        output_format="Output format: all, coverage, gaps, owners, farming, farming-by-territory",
+        output_format="Output format: all, coverage, gaps, owners, mine",
         ignored_players="Comma-separated list of player names to exclude",
     )
     async def rote_platoon(

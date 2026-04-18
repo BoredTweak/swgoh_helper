@@ -22,8 +22,8 @@ from .rote_coverage import (
 from .models import VALID_ROTE_OUTPUT_FORMATS
 from .rote_gap_analyzer import GapAnalyzer
 from .rote_bottleneck_analyzer import BottleneckAnalyzer
-from .rote_proximity_analyzer import ProximityAnalyzer
 from .rote_presenter import RotePresenter
+from .rote_bonus_readiness import BonusReadinessAnalyzer
 from .exceptions import AppExecutionError
 
 
@@ -264,7 +264,7 @@ class RotePlatoonApp:
             if output_format not in VALID_ROTE_OUTPUT_FORMATS:
                 raise ValueError(
                     "Invalid --output-format. "
-                    "Expected one of: all, coverage, gaps, owners, farming, farming-by-territory"
+                    "Expected one of: all, coverage, gaps, owners, mine"
                 )
 
             guild_id, guild_name, member_ally_codes = (
@@ -321,20 +321,28 @@ class RotePlatoonApp:
             self.progress.update("Analyzing platoon coverage...")
             analyzer = CoverageAnalyzer(coverage_matrix, requirements)
 
-            self.progress.update("Analyzing bottlenecks and ownership proximity...")
+            self.progress.update("Analyzing gaps and bottlenecks...")
             gap_analyzer = GapAnalyzer(coverage_matrix, requirements)
             bottleneck_analyzer = BottleneckAnalyzer(coverage_matrix, requirements)
-            proximity_analyzer = ProximityAnalyzer(coverage_matrix, requirements)
+
+            self.progress.update("Checking bonus zone unlock status...")
+            bonus_analyzer = BonusReadinessAnalyzer()
+            bonus_readiness = {
+                "Zeffo": bonus_analyzer.analyze_zeffo_readiness(rosters),
+                "Mandalore": bonus_analyzer.analyze_mandalore_readiness(rosters),
+            }
 
             self.progress.update(f"Formatting output: {output_format}...")
             presenter = RotePresenter()
+            requester_ally_code = int(ally_code.replace("-", ""))
             return presenter.format_results(
                 analyzer,
                 coverage_matrix,
                 gap_analyzer,
                 bottleneck_analyzer,
-                proximity_analyzer,
                 output_format=output_format,
+                requester_ally_code=requester_ally_code,
+                bonus_readiness=bonus_readiness,
             )
 
         except ValueError as e:
@@ -455,9 +463,7 @@ def print_usage():
     print("                            Analyze guild for RotE platoon requirements")
     print("                            --max-phase: Limit analysis to phases up to N")
     print("                                         (e.g., 4, 3b, 5)")
-    print(
-        "                            --output-format: all|coverage|gaps|owners|farming|farming-by-territory"
-    )
+    print("                            --output-format: all|coverage|gaps|owners|mine")
     print("                                             (default: gaps)")
     print(
         "                            --refresh:   Force fresh data from API (ignore cache)"
