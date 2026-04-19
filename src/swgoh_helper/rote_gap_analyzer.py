@@ -93,8 +93,8 @@ class GapAnalyzer:
     def get_gaps_by_unit(
         self, gaps: Optional[List[PlatoonGap]] = None
     ) -> Dict[UnitGapKey, AggregatedGap]:
-        """Aggregate gaps by (unit_id, relic) for cross-consumer consistency."""
-        gaps_to_aggregate = gaps if gaps is not None else self.get_all_gaps()
+        """Aggregate shortages by (unit_id, relic) across all territories."""
+        gaps_to_aggregate = gaps if gaps is not None else self.analyze_all_requirements()
         grouped: Dict[UnitGapKey, List[PlatoonGap]] = defaultdict(list)
         for gap in gaps_to_aggregate:
             grouped[(gap.unit_id, gap.min_relic)].append(gap)
@@ -102,7 +102,10 @@ class GapAnalyzer:
         aggregated: Dict[UnitGapKey, AggregatedGap] = {}
         for unit_key, unit_gaps in grouped.items():
             total_slots = sum(gap.slots_needed for gap in unit_gaps)
-            total_unfillable = sum(gap.slots_unfillable for gap in unit_gaps)
+            guild_owners = max((gap.players_available for gap in unit_gaps), default=0)
+            total_unfillable = max(0, total_slots - guild_owners)
+            if total_unfillable <= 0:
+                continue
             aggregated[unit_key] = (unit_gaps, total_slots, total_unfillable)
         return aggregated
 

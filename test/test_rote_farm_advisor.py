@@ -345,6 +345,58 @@ class TestFarmAdvisor:
         )
         assert adjusted == advisor.BONUS_ZONE_DISABLED_MULTIPLIER
 
+    def test_bonus_zone_weight_not_applied_for_mixed_territories(self):
+        matrix = CoverageMatrix(guild_name="Test", guild_id="g1", member_count=50)
+        requirements = SimpleRoteRequirements(version="1.0", last_updated="2026-01-01")
+        advisor = FarmAdvisor(matrix, requirements)
+        mixed_gaps = [
+            PlatoonGap(
+                unit_id="TEST",
+                unit_name="Test Unit",
+                path=RotePath.LIGHT_SIDE,
+                territory="Mandalore",
+                min_relic=8,
+                slots_needed=1,
+                players_available=0,
+                player_names=[],
+                coverage_ratio=0.0,
+                severity=GapSeverity.CRITICAL,
+                slots_unfillable=1,
+            ),
+            PlatoonGap(
+                unit_id="TEST",
+                unit_name="Test Unit",
+                path=RotePath.LIGHT_SIDE,
+                territory="Kessel",
+                min_relic=8,
+                slots_needed=1,
+                players_available=0,
+                player_names=[],
+                coverage_ratio=0.0,
+                severity=GapSeverity.CRITICAL,
+                slots_unfillable=1,
+            ),
+        ]
+        adjusted = advisor._apply_bonus_zone_weighting(
+            0.9,
+            mixed_gaps,
+            {"Zeffo": (False, 10, 30), "Mandalore": (False, 22, 25)},
+        )
+        assert adjusted == 0.9
+
+    def test_need_score_has_floor_for_high_unfillable_counts(self):
+        advisor = FarmAdvisor(
+            CoverageMatrix(guild_name="Test", guild_id="g1", member_count=50),
+            SimpleRoteRequirements(version="1.0", last_updated="2026-01-01"),
+        )
+        need = advisor._calculate_need_score(
+            guild_owners=5,
+            total_slots=10,
+            total_unfillable=5,
+            severity=GapSeverity.WARNING,
+        )
+        assert need >= advisor.HIGH_UNFILLED_NEED_FLOOR
+
     def test_bonus_unlock_targets_added_when_locked(
         self, sample_coverage_matrix, sample_requirements, sample_player_roster
     ):
@@ -385,6 +437,127 @@ class TestFarmAdvisor:
         )
         assert limited is not None
         assert limited.need_score <= advisor.LIMITED_AVAILABILITY_NEED_SCALE
+
+    def test_limited_availability_threshold_scales_with_required_slots(self):
+        requirements = SimpleRoteRequirements(
+            version="1.0",
+            last_updated="2026-01-01",
+            requirements=[
+                UnitRequirement(
+                    unit_id="THRAWN",
+                    unit_name="Grand Admiral Thrawn",
+                    min_relic=7,
+                    path=RotePath.DARK_SIDE,
+                    territory="Mustafar",
+                    count=5,
+                )
+            ],
+        )
+        matrix = CoverageMatrix(guild_name="Test Guild", guild_id="g1", member_count=50)
+        coverage = UnitCoverage(
+            unit_id="THRAWN",
+            unit_name="Grand Admiral Thrawn",
+            alignment=2,
+            combat_type=1,
+        )
+        for i in range(4):
+            coverage.players_by_relic[7].append(
+                PlayerUnitInfo(
+                    player_name=f"Owner{i}",
+                    ally_code=700000000 + i,
+                    relic_tier=7,
+                    gear_level=13,
+                    rarity=7,
+                )
+            )
+        matrix.units["THRAWN"] = coverage
+
+        roster = MagicMock()
+        roster.data.name = "Target"
+        roster.data.ally_code = 777777777
+        unit = MagicMock()
+        unit.data.base_id = "THRAWN"
+        unit.data.relic_tier = 8  # API value -> R6
+        unit.data.gear_level = 13
+        unit.data.rarity = 7
+        roster.units = [unit]
+
+        report = FarmAdvisor(matrix, requirements).get_player_recommendations(
+            roster, max_recommendations=20
+        )
+        thrawn = next(
+            (r for r in report.recommendations if r.unit_id == "THRAWN"),
+            None,
+        )
+        assert thrawn is not None
+        assert thrawn.required_relic == 7
+        assert thrawn.slots_needed == 5
+        assert thrawn.slots_unfillable == 1
+
+    def test_aggregates_multi_territory_shortage_for_same_relic_tier(self):
+        requirements = SimpleRoteRequirements(
+            version="1.0",
+            last_updated="2026-01-01",
+            requirements=[
+                UnitRequirement(
+                    unit_id="BOBAFETTSCION",
+                    unit_name="Boba Fett, Scion of Jango",
+                    min_relic=6,
+                    path=RotePath.DARK_SIDE,
+                    territory="Felucia",
+                    count=7,
+                ),
+                UnitRequirement(
+                    unit_id="BOBAFETTSCION",
+                    unit_name="Boba Fett, Scion of Jango",
+                    min_relic=6,
+                    path=RotePath.DARK_SIDE,
+                    territory="Geonosis",
+                    count=7,
+                ),
+            ],
+        )
+
+        matrix = CoverageMatrix(guild_name="Test Guild", guild_id="g1", member_count=47)
+        coverage = UnitCoverage(
+            unit_id="BOBAFETTSCION",
+            unit_name="Boba Fett, Scion of Jango",
+            alignment=2,
+            combat_type=1,
+        )
+        for i in range(9):
+            coverage.players_by_relic[6].append(
+                PlayerUnitInfo(
+                    player_name=f"Owner{i}",
+                    ally_code=500000000 + i,
+                    relic_tier=6,
+                    gear_level=13,
+                    rarity=7,
+                )
+            )
+        matrix.units["BOBAFETTSCION"] = coverage
+
+        roster = MagicMock()
+        roster.data.name = "Target"
+        roster.data.ally_code = 999999999
+        unit = MagicMock()
+        unit.data.base_id = "BOBAFETTSCION"
+        unit.data.relic_tier = 7  # API value -> R5
+        unit.data.gear_level = 13
+        unit.data.rarity = 7
+        roster.units = [unit]
+
+        report = FarmAdvisor(matrix, requirements).get_player_recommendations(
+            roster, max_recommendations=50
+        )
+        rec = next(
+            (r for r in report.recommendations if r.unit_id == "BOBAFETTSCION"),
+            None,
+        )
+        assert rec is not None
+        assert rec.required_relic == 6
+        assert rec.slots_needed == 14
+        assert rec.slots_unfillable == 5
 
 
 class TestPersonalFarmRecommendation:

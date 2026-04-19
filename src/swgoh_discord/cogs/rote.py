@@ -16,6 +16,13 @@ from swgoh_discord.utils import (
 )
 
 
+DISCORD_ROTE_OUTPUT_FORMATS = tuple(
+    output_format
+    for output_format in VALID_ROTE_OUTPUT_FORMATS
+    if output_format != "limited"
+)
+
+
 class RoteCog(commands.Cog):
     def __init__(self, bot: commands.Bot, api_key: str):
         self.bot = bot
@@ -54,10 +61,11 @@ class RoteCog(commands.Cog):
             if not await safe_defer(interaction, thinking=True):
                 return
 
-            if output_format not in VALID_ROTE_OUTPUT_FORMATS:
+            if output_format not in DISCORD_ROTE_OUTPUT_FORMATS:
                 await safe_followup_send(
                     interaction,
-                    f"Invalid output format. Expected one of: {', '.join(VALID_ROTE_OUTPUT_FORMATS)}",
+                    "Invalid output format. "
+                    f"Expected one of: {', '.join(DISCORD_ROTE_OUTPUT_FORMATS)}",
                 )
                 return
 

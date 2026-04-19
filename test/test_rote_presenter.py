@@ -623,6 +623,128 @@ def test_output_format_mine_adds_limited_availability_callout():
     assert "- Grand Admiral Thrawn R5 **You are one of only" not in output
 
 
+def test_output_format_limited_counts_unique_character_requirements_per_member():
+    """Limited view should list each member with unique limited character counts."""
+    requirements = SimpleRoteRequirements(
+        last_updated="2026-04-01",
+        requirements=[
+            UnitRequirement(
+                unit_id="VADER",
+                unit_name="Darth Vader",
+                min_relic=7,
+                path=RotePath.DARK_SIDE,
+                territory="Mustafar",
+                count=1,
+            ),
+            UnitRequirement(
+                unit_id="THRAWN",
+                unit_name="Grand Admiral Thrawn",
+                min_relic=5,
+                path=RotePath.DARK_SIDE,
+                territory="Mustafar",
+                count=1,
+            ),
+            UnitRequirement(
+                unit_id="TARKIN",
+                unit_name="Grand Moff Tarkin",
+                min_relic=5,
+                path=RotePath.DARK_SIDE,
+                territory="Mustafar",
+                count=5,
+            ),
+        ],
+    )
+    matrix = CoverageMatrix(
+        guild_name="Test Guild",
+        guild_id="guild-1",
+        member_count=4,
+        units={
+            "VADER": UnitCoverage(
+                unit_id="VADER",
+                unit_name="Darth Vader",
+                alignment=2,
+                combat_type=CombatType.CHARACTER,
+                players_by_relic={
+                    7: [
+                        PlayerUnitInfo(
+                            player_name="Alpha",
+                            ally_code=111111111,
+                            relic_tier=7,
+                        ),
+                        PlayerUnitInfo(
+                            player_name="Beta",
+                            ally_code=222222222,
+                            relic_tier=7,
+                        ),
+                    ]
+                },
+            ),
+            "THRAWN": UnitCoverage(
+                unit_id="THRAWN",
+                unit_name="Grand Admiral Thrawn",
+                alignment=2,
+                combat_type=CombatType.CHARACTER,
+                players_by_relic={
+                    5: [
+                        PlayerUnitInfo(
+                            player_name="Alpha",
+                            ally_code=111111111,
+                            relic_tier=5,
+                        )
+                    ]
+                },
+            ),
+            "TARKIN": UnitCoverage(
+                unit_id="TARKIN",
+                unit_name="Grand Moff Tarkin",
+                alignment=2,
+                combat_type=CombatType.CHARACTER,
+                players_by_relic={
+                    5: [
+                        PlayerUnitInfo(
+                            player_name="Beta",
+                            ally_code=222222222,
+                            relic_tier=5,
+                        ),
+                        PlayerUnitInfo(
+                            player_name="Charlie",
+                            ally_code=333333333,
+                            relic_tier=5,
+                        ),
+                        PlayerUnitInfo(
+                            player_name="Delta",
+                            ally_code=444444444,
+                            relic_tier=5,
+                        ),
+                        PlayerUnitInfo(
+                            player_name="Alpha",
+                            ally_code=111111111,
+                            relic_tier=5,
+                        ),
+                    ]
+                },
+            ),
+        },
+    )
+    analyzer = CoverageAnalyzer(matrix, requirements)
+    gap_analyzer = GapAnalyzer(matrix, requirements)
+    bottleneck_analyzer = BottleneckAnalyzer(matrix, requirements)
+
+    output = RotePresenter().format_results(
+        analyzer,
+        matrix,
+        gap_analyzer,
+        bottleneck_analyzer,
+        output_format="limited",
+    )
+
+    assert "**Limited Availability by Member**" in output
+    assert "- Alpha: 3 limited availability characters" in output
+    assert "- Beta: 2 limited availability characters" in output
+    assert "- Charlie: 1 limited availability character" in output
+    assert "- Delta: 1 limited availability character" in output
+
+
 def test_output_format_mine_sorts_scarcest_units_first_within_territory():
     """Mine view should sort sole-owner and scarcer units first for deploy priority."""
     requirements = SimpleRoteRequirements(
