@@ -40,6 +40,8 @@ class RoteOutputFormat(str, Enum):
     GAPS = "gaps"
     OWNERS = "owners"
     MINE = "mine"
+    LIMITED = "limited"
+    """The "limited" format is excluded from Discord output options as it is sensitive."""
 
 
 VALID_ROTE_OUTPUT_FORMATS = {output_format.value for output_format in RoteOutputFormat}

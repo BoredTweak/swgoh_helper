@@ -11,6 +11,11 @@ from swgoh_discord.cogs.bonus_readiness import setup as bonus_readiness_setup
 from swgoh_discord.utils import handle_app_command_error
 
 
+async def _sync_commands() -> None:
+    synced = await bot.tree.sync()
+    print(f"Synced {len(synced)} slash commands.")
+
+
 def create_bot() -> commands.Bot:
     intents = discord.Intents.default()
     intents.message_content = True
@@ -39,8 +44,7 @@ async def on_ready():
     await bonus_readiness_setup(bot)
     _cogs_registered = True
 
-    synced = await bot.tree.sync()
-    print(f"Synced {len(synced)} slash commands.")
+    await _sync_commands()
 
 
 @bot.tree.error

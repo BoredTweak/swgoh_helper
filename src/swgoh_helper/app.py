@@ -463,13 +463,22 @@ def print_usage():
     print("                            Analyze guild for RotE platoon requirements")
     print("                            --max-phase: Limit analysis to phases up to N")
     print("                                         (e.g., 4, 3b, 5)")
-    print("                            --output-format: all|coverage|gaps|owners|mine")
+    print(
+        "                            --output-format: all|coverage|gaps|owners|mine|limited"
+    )
     print("                                             (default: gaps)")
     print(
         "                            --refresh:   Force fresh data from API (ignore cache)"
     )
     print(
         "                            --ignore-players: Exclude players by name or ally code"
+    )
+    print()
+    print(
+        "  rote_limited <ally_code> [--max-phase N] [--refresh] [--ignore-players PLAYER1,PLAYER2,...]"
+    )
+    print(
+        "                            List members with count of limited-availability character requirements"
     )
     print()
     print(
@@ -628,6 +637,42 @@ def run_rote_platoon():
         sys.exit(1)
 
 
+def run_rote_limited():
+    """Entry point for rote-limited CLI command."""
+    if len(sys.argv) < 2:
+        print(
+            "Usage: rote-limited <ally_code> [--max-phase N] [--refresh] [--ignore-players PLAYER1,PLAYER2,...]"
+        )
+        sys.exit(1)
+
+    if not SWGOH_API_KEY:
+        print("Error: SWGOH_API_KEY not found in environment variables")
+        print("Please create a .env file with your API key")
+        sys.exit(1)
+
+    ally_code = sys.argv[1]
+    try:
+        options = _parse_rote_platoon_args(start_index=2)
+    except ValueError as e:
+        print(f"Error: {e}")
+        sys.exit(1)
+
+    app = RotePlatoonApp(SWGOH_API_KEY)
+    try:
+        output = app.analyze_guild(
+            ally_code,
+            max_phase=options["max_phase"],
+            refresh=options["refresh"],
+            output_format="limited",
+            ignored_players=options["ignored_players"],
+        )
+        print(output)
+    except AppExecutionError as e:
+        print(str(e))
+        traceback.print_exc()
+        sys.exit(1)
+
+
 def run_rote_farm():
     """Entry point for rote-farm CLI command."""
     if len(sys.argv) < 2:
@@ -688,6 +733,8 @@ def main():
         "kyrotech": run_kyrotech,
         "rote_platoon": run_rote_platoon,
         "rote-platoon": run_rote_platoon,
+        "rote_limited": run_rote_limited,
+        "rote-limited": run_rote_limited,
         "rote_farm": run_rote_farm,
         "rote-farm": run_rote_farm,
     }

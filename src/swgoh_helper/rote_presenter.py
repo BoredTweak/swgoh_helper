@@ -3,8 +3,10 @@
 from collections import defaultdict
 from typing import Dict, Optional
 
+from .constants import LIMITED_AVAILABILITY_CALLOUT_THRESHOLD
 from .models import CombatType, UnitType
 from .models.rote import BonusZoneReadiness
+from .rote_limited_availability_service import LimitedAvailabilityService
 from .rote_coverage import CoverageAnalyzer, RoteConfig
 from .rote_gap_analyzer import GapAnalyzer
 from .rote_bottleneck_analyzer import BottleneckAnalyzer
@@ -13,8 +15,6 @@ from .rote_models import RotePath
 
 class RotePresenter:
     """Formats ROTE platoon analysis as markdown for Discord sharing."""
-
-    LIMITED_AVAILABILITY_THRESHOLD = 4
 
     def format_results(
         self,
@@ -46,7 +46,61 @@ class RotePresenter:
                 self._format_only_mine_requirements(analyzer, requester_ally_code)
             )
 
+        if output_format == "limited":
+            lines.extend(
+                self._format_limited_availability_owners(analyzer, bottleneck_analyzer)
+            )
+
         return "\n".join(lines)
+
+    def _format_limited_availability_owners(
+        self,
+        analyzer: CoverageAnalyzer,
+        bottleneck_analyzer: BottleneckAnalyzer,
+    ) -> list[str]:
+        """Format per-member ownership count for limited-availability character requirements."""
+        lines = ["", "**Limited Availability by Member**"]
+        rare_character_units = [
+            unit
+            for unit in bottleneck_analyzer.identify_unicorn_units()
+            if unit.owner_count > 0 and self._is_character_unit(analyzer, unit.unit_id)
+        ]
+        if not rare_character_units:
+            lines.append("No limited availability character requirements found.")
+            return lines
+
+        member_names = self._collect_member_names(analyzer)
+        counts_by_member = {name: 0 for name in member_names}
+
+        for unit in rare_character_units:
+            for owner_name in set(unit.owner_names):
+                if owner_name in counts_by_member:
+                    counts_by_member[owner_name] += 1
+
+        sorted_counts = sorted(
+            counts_by_member.items(),
+            key=lambda item: (-item[1], item[0].casefold()),
+        )
+        for member_name, count in sorted_counts:
+            character_word = "character" if count == 1 else "characters"
+            lines.append(
+                f"- {member_name}: {count} limited availability {character_word}"
+            )
+
+        return lines
+
+    def _is_character_unit(self, analyzer: CoverageAnalyzer, unit_id: str) -> bool:
+        """Check whether a unit is a character in guild coverage data."""
+        coverage = analyzer.matrix.get_coverage(unit_id)
+        return bool(coverage and coverage.combat_type == CombatType.CHARACTER)
+
+    def _collect_member_names(self, analyzer: CoverageAnalyzer) -> list[str]:
+        """Collect all unique member names represented in the coverage matrix."""
+        names: set[str] = set()
+        for coverage in analyzer.matrix.units.values():
+            for player in coverage.all_players():
+                names.add(player.player_name)
+        return sorted(names, key=str.casefold)
 
     def _format_only_mine_requirements(
         self, analyzer: CoverageAnalyzer, requester_ally_code: int | None
@@ -89,7 +143,9 @@ class RotePresenter:
                 )
                 line = f"- {requirement.unit_name} {requester_status}"
                 owner_count = len(owners)
-                callout = self._format_limited_availability_callout(owner_count)
+                callout = self._format_limited_availability_callout(
+                    owner_count, requirement.count
+                )
                 matched_requirements.append(
                     (
                         owner_count,
@@ -165,9 +221,15 @@ class RotePresenter:
 
         return "(owned)"
 
-    def _format_limited_availability_callout(self, owner_count: int) -> str:
+    def _format_limited_availability_callout(
+        self, owner_count: int, slots_needed: int
+    ) -> str:
         """Return callout text when owner coverage is limited."""
-        if owner_count > self.LIMITED_AVAILABILITY_THRESHOLD:
+        if not LimitedAvailabilityService.is_limited(
+            owner_count,
+            slots_needed,
+            LIMITED_AVAILABILITY_CALLOUT_THRESHOLD,
+        ):
             return ""
 
         if owner_count == 1:

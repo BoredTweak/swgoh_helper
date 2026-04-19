@@ -10,7 +10,12 @@ Provides personalized farming recommendations for a specific player based on:
 from collections import defaultdict
 from typing import Dict, List, Optional, Tuple
 
-from .constants import MANDALORE_THRESHOLD, MIN_RELIC_TIER, ZEFFO_THRESHOLD
+from .constants import (
+    LIMITED_AVAILABILITY_BASE_THRESHOLD,
+    MANDALORE_THRESHOLD,
+    MIN_RELIC_TIER,
+    ZEFFO_THRESHOLD,
+)
 from .models import PlayerResponse, UnitData
 from .models.rote import (
     CoverageMatrix,
@@ -21,6 +26,7 @@ from .models.rote import (
     SimpleRoteRequirements,
 )
 from .rote_gap_analyzer import AggregatedGap, GapAnalyzer, UnitGapKey
+from .rote_limited_availability_service import LimitedAvailabilityService
 from .rote_proximity_analyzer import ProximityAnalyzer
 
 BonusUnlockContext = Dict[str, Tuple[bool, int, int]]
@@ -54,7 +60,10 @@ class FarmAdvisor:
 
     BONUS_ZONE_TERRITORIES = {"Zeffo", "Mandalore"}
     BONUS_ZONE_DISABLED_MULTIPLIER = 0.35
-    LIMITED_AVAILABILITY_OWNER_THRESHOLD = 3
+    HIGH_UNFILLED_SLOT_THRESHOLD = 5
+    MEDIUM_UNFILLED_SLOT_THRESHOLD = 3
+    HIGH_UNFILLED_NEED_FLOOR = 0.95
+    MEDIUM_UNFILLED_NEED_FLOOR = 0.8
     LIMITED_AVAILABILITY_NEED_SCALE = 0.55
     BONUS_UNLOCK_TARGETS = {
         "Zeffo": [
@@ -77,6 +86,11 @@ class FarmAdvisor:
         self.matrix = coverage_matrix
         self.requirements = requirements
         self.gap_analyzer = GapAnalyzer(coverage_matrix, requirements)
+        self.limited_availability_service = LimitedAvailabilityService(
+            coverage_matrix,
+            requirements,
+            base_owner_threshold=LIMITED_AVAILABILITY_BASE_THRESHOLD,
+        )
         self.proximity_analyzer = proximity_analyzer or ProximityAnalyzer(
             coverage_matrix, requirements
         )
@@ -128,7 +142,6 @@ class FarmAdvisor:
         )
         recommendations.extend(
             self._build_limited_availability_recommendations(
-                required_targets=required_targets,
                 player_units=player_units,
                 include_unowned=include_unowned,
             )
@@ -218,29 +231,28 @@ class FarmAdvisor:
 
     def _build_limited_availability_recommendations(
         self,
-        required_targets: RequiredTargetMap,
         player_units: Dict[str, UnitData],
         include_unowned: bool,
     ) -> List[PersonalFarmRecommendation]:
         recommendations = []
-        for (unit_id, min_relic), (
+        for (
+            unit_id,
             unit_name,
-            territories,
+            min_relic,
+            slots_per_territory,
             total_slots,
-        ) in required_targets.items():
-            guild_owners = self.matrix.get_count_at_relic(unit_id, min_relic)
-            if (
-                guild_owners <= 0
-                or guild_owners > self.LIMITED_AVAILABILITY_OWNER_THRESHOLD
-            ):
-                continue
+            _,
+            guild_owners,
+            limited_threshold,
+        ) in self.limited_availability_service.get_targets(include_zero_owners=False):
             recommendation = self._build_limited_target_recommendation(
                 unit_id=unit_id,
                 unit_name=unit_name,
                 min_relic=min_relic,
-                territories=territories,
+                territories=sorted(slots_per_territory),
                 total_slots=total_slots,
                 guild_owners=guild_owners,
+                limited_threshold=limited_threshold,
                 player_unit=player_units.get(unit_id),
                 include_unowned=include_unowned,
             )
@@ -256,6 +268,7 @@ class FarmAdvisor:
         territories: List[str],
         total_slots: int,
         guild_owners: int,
+        limited_threshold: int,
         player_unit: Optional[UnitData],
         include_unowned: bool,
     ) -> Optional[PersonalFarmRecommendation]:
@@ -272,9 +285,7 @@ class FarmAdvisor:
             min_relic,
             has_unit,
         )
-        base_need = (self.LIMITED_AVAILABILITY_OWNER_THRESHOLD + 1 - guild_owners) / (
-            self.LIMITED_AVAILABILITY_OWNER_THRESHOLD + 1
-        )
+        base_need = (limited_threshold + 1 - guild_owners) / (limited_threshold + 1)
         need_score = min(1.0, base_need * self.LIMITED_AVAILABILITY_NEED_SCALE)
         return PersonalFarmRecommendation(
             unit_id=unit_id,
@@ -367,6 +378,12 @@ class FarmAdvisor:
         bonus_unlock: BonusUnlockContext,
     ) -> float:
         territories = {gap.territory for gap in gaps}
+        bonus_territories = territories & self.BONUS_ZONE_TERRITORIES
+
+        # Avoid suppressing mixed requirements that are also needed on non-bonus planets.
+        if not bonus_territories or territories - self.BONUS_ZONE_TERRITORIES:
+            return need_score
+
         for zone_name in self.BONUS_ZONE_TERRITORIES:
             unlockable, _, _ = bonus_unlock[zone_name]
             if zone_name in territories and not unlockable:
@@ -595,4 +612,11 @@ class FarmAdvisor:
             unfillable_boost = 0
 
         need_score = min(base_need * severity_mult + unfillable_boost, 1.0)
+
+        # Preserve visibility for high-impact shortages spread across many slots.
+        if total_unfillable >= self.HIGH_UNFILLED_SLOT_THRESHOLD:
+            need_score = max(need_score, self.HIGH_UNFILLED_NEED_FLOOR)
+        elif total_unfillable >= self.MEDIUM_UNFILLED_SLOT_THRESHOLD:
+            need_score = max(need_score, self.MEDIUM_UNFILLED_NEED_FLOOR)
+
         return need_score

@@ -2,6 +2,7 @@
 Unit tests for the SWGOH.gg data access layer.
 """
 
+from pathlib import Path
 from unittest.mock import Mock, patch
 
 from swgoh_helper.data_access import (
@@ -15,6 +16,46 @@ from swgoh_helper.data_access import (
     StatDefinitionsRepository,
 )
 from swgoh_helper.cache_manager import CacheManager
+
+
+class TestCacheManager:
+    """Tests for cache manager file I/O behavior."""
+
+    def test_set_retries_atomic_replace_on_transient_error(self, tmp_path):
+        cache = CacheManager(cache_dir=str(tmp_path), cache_duration_hours=1)
+        calls = {"count": 0}
+        original_replace = Path.replace
+
+        def flaky_replace(self, target):
+            calls["count"] += 1
+            if calls["count"] == 1:
+                raise PermissionError("locked")
+            return original_replace(self, target)
+
+        with patch("pathlib.Path.replace", autospec=True, side_effect=flaky_replace):
+            cache.set("unit_test", {"ok": True})
+
+        assert calls["count"] >= 2
+        assert cache.get("unit_test") == {"ok": True}
+
+    def test_invalidate_retries_on_transient_error(self, tmp_path):
+        cache = CacheManager(cache_dir=str(tmp_path), cache_duration_hours=1)
+        cache.set("unit_test", {"ok": True})
+
+        calls = {"count": 0}
+        original_unlink = Path.unlink
+
+        def flaky_unlink(self, *args, **kwargs):
+            calls["count"] += 1
+            if calls["count"] == 1 and self.name == "unit_test.json":
+                raise PermissionError("locked")
+            return original_unlink(self, *args, **kwargs)
+
+        with patch("pathlib.Path.unlink", autospec=True, side_effect=flaky_unlink):
+            cache.invalidate("unit_test")
+
+        assert calls["count"] >= 2
+        assert cache.get("unit_test") is None
 
 
 class TestBaseApiClient:

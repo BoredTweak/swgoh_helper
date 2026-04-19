@@ -63,6 +63,7 @@ uv run rote-platoon 123-456-789 --output-format gaps
 uv run rote-platoon 123-456-789 --output-format coverage
 uv run rote-platoon 123-456-789 --output-format owners
 uv run rote-platoon 123-456-789 --output-format mine
+uv run rote-platoon 123-456-789 --output-format limited
 uv run rote-platoon 123-456-789 --output-format all
 ```
 
@@ -83,12 +84,29 @@ Valid phases: `1`, `2`, `3`, `3b`, `4`, `4b`, `5`, `5b`, `6`
 - `coverage`: territory coverage summary
 - `owners`: qualifying owners for each requirement, grouped by territory
 - `mine`: planet-centric list of requirements you can cover, with limited-availability callouts
+- `limited`: per-member count of unique limited-availability character requirements
 - `all`: coverage + gaps
 
 **Optional flags:**
 - `--ignore-players` excludes players from analysis by name or ally code (supports `123456789` or `123-456-789`)
 
 Farming recommendations have moved to `rote-farm`.
+
+### Limited Availability Member List
+
+List all guild members with counts of unique limited-availability ROTE platoon characters:
+
+```powershell
+uv run rote-limited <ally_code>
+```
+
+Options:
+
+```powershell
+uv run rote-limited 123-456-789 --max-phase 4
+uv run rote-limited 123-456-789 --refresh
+uv run rote-limited 123-456-789 --ignore-players "Name One,Name Two"
+```
 
 ### Bonus Zone Readiness Analysis
 
@@ -163,7 +181,8 @@ The project includes an optional Discord bot that exposes all commands as slash 
 | `/rote-farm` | Personal farm recommendations based on guild needs |
 | `/rote-bonus-readiness` | Analyze guild readiness for RotE bonus zones |
 
-All commands accept the same options as their CLI counterparts (ally code, max-phase, etc.) as slash command parameters.
+Slash commands generally mirror CLI parameters (ally code, max-phase, etc.).
+`/rote-platoon` does not expose the `limited` output format; use the CLI `uv run rote-limited <ally_code>` for that report.
 
 ## Caching
 
