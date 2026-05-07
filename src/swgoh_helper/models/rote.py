@@ -65,13 +65,53 @@ class UnitRequirement(BaseModel):
     )
 
 
+class PlatoonRules(BaseModel):
+    """Global rules that apply to ROTE platoon scoring and slotting."""
+
+    operations_per_planet: int = Field(default=6, ge=1)
+    slots_per_operation: int = Field(default=15, ge=1)
+    unit_star_requirement: int = Field(default=7, ge=1, le=7)
+    ships_use_min_relic_as_star_requirement: bool = True
+
+
+class TerritoryPlatoonMetadata(BaseModel):
+    """Structured per-territory metadata for platoon planning."""
+
+    planet_id: str
+    territory: str
+    path: RotePath
+    phase: int = Field(ge=1, le=6)
+    is_bonus: bool = False
+    min_relic: int = Field(ge=0, le=9)
+    operation_effect: str | None = None
+    gp_per_operation: int = Field(ge=0)
+    gp_thresholds: Dict[str, int] = Field(
+        default_factory=dict,
+        description="GP required to unlock each star tier (keys: '1', '2', '3')",
+    )
+    platoon_roster: Dict[str, List[str]] = Field(
+        default_factory=dict,
+        description="Unit names for each platoon operation (keys: '1'–'6')",
+    )
+
+
 class SimpleRoteRequirements(BaseModel):
     """ROTE requirements that list units by relic tier."""
 
     version: str = Field(default="1.0")
     last_updated: str
     notes: Optional[str] = None
+    source_metadata: Dict[str, str] = Field(default_factory=dict)
+    platoon_rules: PlatoonRules = Field(default_factory=PlatoonRules)
+    territories: List[TerritoryPlatoonMetadata] = Field(default_factory=list)
     requirements: List[UnitRequirement] = Field(default_factory=list)
+
+    def territory_phase_map(self) -> Dict[str, str]:
+        """Return territory -> phase key, using bonus suffixes when applicable."""
+        return {
+            territory.territory: f"{territory.phase}{'b' if territory.is_bonus else ''}"
+            for territory in self.territories
+        }
 
 
 # ===== Coverage Models =====

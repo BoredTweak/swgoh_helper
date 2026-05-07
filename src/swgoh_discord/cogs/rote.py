@@ -37,6 +37,7 @@ class RoteCog(commands.Cog):
         max_phase="Limit analysis to phases up to N (e.g. 4, 3b, 5)",
         refresh="Force fresh data from API (ignore cache)",
         output_format="Output format: all, coverage, gaps, owners, mine",
+        verbose="Show all owners for each requirement (owners format)",
         ignored_players="Comma-separated list of player names to exclude",
     )
     async def rote_platoon(
@@ -46,6 +47,7 @@ class RoteCog(commands.Cog):
         max_phase: Optional[str] = None,
         refresh: bool = False,
         output_format: Optional[str] = "gaps",
+        verbose: bool = False,
         ignored_players: Optional[str] = None,
     ):
         log_command(
@@ -55,6 +57,7 @@ class RoteCog(commands.Cog):
             max_phase=max_phase,
             refresh=refresh,
             output_format=output_format,
+            verbose=verbose,
             ignored_players=ignored_players,
         )
         try:
@@ -84,6 +87,7 @@ class RoteCog(commands.Cog):
                 max_phase=max_phase,
                 refresh=refresh,
                 output_format=output_format,
+                verbose=verbose,
                 ignored_players=parsed_ignored,
                 progress=notifier,
             )

@@ -9,7 +9,6 @@ Distance scoring: (relic_gap x 1.0) + (gear_gap x 0.5) + (star_gap x 2.0)
 """
 
 import json
-import sys
 from pathlib import Path
 from typing import Dict, List, Optional, Set
 
@@ -396,44 +395,3 @@ class BonusReadinessApp:
         self.progress.update("Analyzing Mandalore readiness...")
         mandalore = self.analyzer.analyze_mandalore_readiness(rosters)
         return self.analyzer.format_bonus_readiness_report(zeffo, mandalore)
-
-
-def _print_bonus_readiness_usage() -> None:
-    print("Usage: rote_bonus_readiness <guild_id>")
-    print()
-    print("Analyze guild readiness for Rise of the Empire bonus zones.")
-    print()
-    print("Arguments:")
-    print("  guild_id  The guild ID to analyze (from cached data)")
-    print()
-    print("The command reads cached data from the 'data/' directory.")
-    print("Run 'rote-platoon <ally_code>' first to populate the cache.")
-
-
-def run_rote_bonus_readiness() -> None:
-    """Entry point for rote-bonus-readiness CLI command."""
-    if len(sys.argv) < 2:
-        _print_bonus_readiness_usage()
-        sys.exit(1)
-
-    if sys.argv[1] in ("--help", "-h"):
-        _print_bonus_readiness_usage()
-        sys.exit(0)
-
-    try:
-        print(BonusReadinessApp().analyze(sys.argv[1]))
-    except FileNotFoundError as e:
-        print(f"Error: {e}")
-        print("Make sure you have guild and player data in the 'data/' directory.")
-        print("Run 'rote-platoon <ally_code>' first to populate the cache.")
-        sys.exit(1)
-    except Exception as e:
-        print(f"Error: {e}")
-        import traceback
-
-        traceback.print_exc()
-        sys.exit(1)
-
-
-if __name__ == "__main__":
-    run_rote_bonus_readiness()

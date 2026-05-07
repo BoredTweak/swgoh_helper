@@ -1,8 +1,13 @@
 # SWGOH Helper
 
-Tools for analyzing Star Wars Galaxy of Heroes data via the SWGOH.gg API.
+SWGOH Helper is a local analysis toolkit for Star Wars: Galaxy of Heroes guild planning.
 
-## Prerequisites
+It provides:
+- CLI commands for roster and guild analysis
+- Optional Discord slash commands backed by the same app logic
+- Local caching in `data/` for SWGOH.gg API responses
+
+## Requirements
 
 - Python 3.12+
 - [uv](https://docs.astral.sh/uv/)
@@ -10,181 +15,159 @@ Tools for analyzing Star Wars Galaxy of Heroes data via the SWGOH.gg API.
 
 ## Setup
 
-1. Install uv (if not already installed):
-   ```powershell
-   pip install uv
-   ```
-
-2. Sync dependencies:
-   ```powershell
-   uv sync
-   ```
-
-3. Create a `.env` file with your API key:
-   ```
-   SWGOH_API_KEY=your_api_key_here
-   ```
-NOTE:
-You can obtain an API key by 
-1. Creating an account with https://swgoh.gg/
-1. Under your profile, select manage api applications
-1. Add a new application for this helper. 
-   - This process will take a few days for SWGOH to approve
-
-## Usage
-
-### Kyrotech Analysis
-
-Analyze a player's roster for Kyrotech gear requirements (current gear → G13):
+1. Install dependencies:
 
 ```powershell
-uv run kyrotech <ally_code>
+uv sync
 ```
 
-Example:
+2. Create `.env`:
+
+```env
+SWGOH_API_KEY=your_api_key_here
+```
+
+API key notes:
+1. Create an account at https://swgoh.gg/
+2. Open profile -> manage API applications
+3. Create an app for this tool (approval can take a few days)
+
+## CLI
+
+You can run commands either directly (for example `uv run rote-platoon ...`) or through the umbrella command (`uv run swgoh <command> ...`).
+
+### Quickstart
+
+If you just want to run something quickly, start here:
+
+```powershell
+# 1) platoon gaps for your guild
+uv run rote-platoon 123-456-789
+
+# 2) personal farm recommendations
+uv run rote-farm 123-456-789 --max-phase 4
+
+# 3) limited-availability member pressure view
+uv run rote-limited 123-456-789
+
+# 4) bonus zone readiness from cache (requires prior rote-platoon run)
+uv run rote-bonus-readiness <guild_id>
+```
+
+Equivalent umbrella form:
+
+```powershell
+uv run swgoh rote-platoon 123-456-789
+uv run swgoh rote-farm 123-456-789 --max-phase 4
+```
+
+### Command Reference
+
+| Command | Purpose | Typical Input |
+|---|---|---|
+| `kyrotech` | Player kyrotech needs | ally code |
+| `rote-platoon` | Guild platoon coverage/gaps | ally code |
+| `rote-limited` | Limited-availability member counts | ally code |
+| `rote-farm` | Personalized farming priorities | ally code |
+| `rote-bonus-readiness` | Zeffo/Mandalore readiness from local cache | guild id |
+
+### Kyrotech
+
+Analyze a player's kyrotech needs:
+
 ```powershell
 uv run kyrotech 123-456-789
+uv run kyrotech --ally-code 123-456-789 --faction Empire --include-unowned
 ```
 
-### ROTE Platoon Analysis
+### ROTE Platoon
 
-Analyze guild coverage for Rise of the Empire Territory Battle platoon requirements:
+Analyze guild ROTE platoon coverage:
 
 ```powershell
-uv run rote-platoon <ally_code>
+uv run rote-platoon 123-456-789
+uv run rote-platoon --ally-code 123-456-789 --max-phase 4 --output-format owners
 ```
 
-By default, this now prints only the `gaps` view.
+Output formats:
+- `gaps` (default)
+- `coverage`
+- `owners`
+- `mine`
+- `limited`
+- `all`
 
-Choose a specific output format:
+Useful options:
+- `--refresh`
+- `--ignore-players "Name One,Name Two"`
+
+### ROTE Limited
+
+Show limited-availability requirements per member:
 
 ```powershell
-uv run rote-platoon 123-456-789 --output-format gaps
-uv run rote-platoon 123-456-789 --output-format coverage
-uv run rote-platoon 123-456-789 --output-format owners
-uv run rote-platoon 123-456-789 --output-format mine
-uv run rote-platoon 123-456-789 --output-format limited
-uv run rote-platoon 123-456-789 --output-format all
+uv run rote-limited 123-456-789
+uv run rote-limited --ally-code 123-456-789 --max-phase 4 --ignore-players "Name One,Name Two"
+uv run rote-limited 123-456-789 --output-format relic
 ```
 
-Optionally limit analysis to a specific phase:
-```powershell
-uv run rote-platoon 123-456-789 --max-phase 4
-```
+Output formats:
+- `member` (default): each guild member's count of limited-availability character requirements
+- `relic`: all required ROTE characters grouped by required relic tier with owner counts and required slots
 
-Show every qualifying owner for each platoon requirement, grouped by territory:
-```powershell
-uv run rote-platoon 123-456-789 --max-phase 4 --output-format owners
-```
+### ROTE Farm
 
-Valid phases: `1`, `2`, `3`, `3b`, `4`, `4b`, `5`, `5b`, `6`
-
-**Output formats:**
-- `gaps` (default): critical gaps + limited availability units
-- `coverage`: territory coverage summary
-- `owners`: qualifying owners for each requirement, grouped by territory
-- `mine`: planet-centric list of requirements you can cover, with limited-availability callouts
-- `limited`: per-member count of unique limited-availability character requirements
-- `all`: coverage + gaps
-
-**Optional flags:**
-- `--ignore-players` excludes players from analysis by name or ally code (supports `123456789` or `123-456-789`)
-
-Farming recommendations have moved to `rote-farm`.
-
-### Limited Availability Member List
-
-List all guild members with counts of unique limited-availability ROTE platoon characters:
+Get player-specific farm recommendations:
 
 ```powershell
-uv run rote-limited <ally_code>
+uv run rote-farm 123-456-789
+uv run rote-farm --ally-code 123-456-789 --max-phase 4 --max-recommendations 10 --include-unowned
 ```
 
-Options:
+### ROTE Bonus Readiness
+
+Analyze cached guild readiness for Zeffo and Mandalore bonus zones:
 
 ```powershell
-uv run rote-limited 123-456-789 --max-phase 4
-uv run rote-limited 123-456-789 --refresh
-uv run rote-limited 123-456-789 --ignore-players "Name One,Name Two"
+uv run rote-bonus-readiness <guild_id>
 ```
 
-### Bonus Zone Readiness Analysis
+This command reads local cache data. Run `rote-platoon` first to populate guild/player cache files.
 
-Compare guild readiness for Zeffo vs Mandalore bonus zones in Rise of the Empire TB:
+## Discord Bot (Optional)
+
+The Discord bot exposes these slash commands:
+- `/kyrotech`
+- `/rote-platoon`
+- `/rote-farm`
+- `/rote-bonus-readiness`
+
+Setup:
+
+1. Install optional dependency:
 
 ```powershell
-uv run pytest test/test_bonus_zone_readiness.py -v -s
+uv sync --extra discord
 ```
 
-**What it analyzes:**
-- Current qualifying player count vs unlock threshold (Zeffo: 30/30, Mandalore: 25/25)
-- "Distance" to qualify for each near-qualifying player using the same weighted farming model:
-   - relic upgrade cost weights from `data/relic_costs.json`
-   - `+2.0` per gear level needed to reach G13
-   - `+5.0` per missing star
-- Total guild farming effort to fill the gap
-- Quick wins (players within distance < 5)
+2. Add Discord token to `.env`:
 
-**Mandalore unlock chain (factored into distance calculations):**
-- Bo-Katan (Mand'alor) requires R7: Kelleran Beq, Paz Vizsla, IG-12 & Grogu, Beskar Mando
-- Beskar Mando requires 7★ G12: Mando, Greef Karga, Cara Dune, IG-11, Kuiil
+```env
+DISCORD_TOKEN=your_discord_bot_token_here
+```
 
-**Output includes:**
-- Officer briefing with priority player lists
-- Comparison summary (which zone is closer to unlock)
-- Quick wins for each zone
-
-See [Bonus Zone Analysis](docs/bonus_zone_analysis.md) for the latest results.
-
-### Personal Farm Recommendations
-
-Get personalized farming recommendations based on your guild's platoon gaps:
+3. Run bot:
 
 ```powershell
-uv run rote-farm <ally_code>
+uv run --extra discord swgoh-discord
 ```
 
-Options:
-```powershell
-uv run rote-farm 123-456-789 --max-phase 4
-uv run rote-farm 123-456-789 --max-recommendations 10
-uv run rote-farm 123-456-789 --include-unowned
-```
-
-## Discord Bot
-
-The project includes an optional Discord bot that exposes all commands as slash commands.
-
-### Discord Setup
-
-1. Sync dependencies with the discord extra:
-   ```powershell
-   uv sync --extra discord
-   ```
-
-2. Add your Discord bot token to `.env`:
-   ```
-   DISCORD_TOKEN=your_discord_bot_token_here
-   ```
-
-3. Run the bot:
-   ```powershell
-   uv run --extra discord swgoh-discord
-   ```
-
-### Slash Commands
-
-| Command | Description |
-|---------|-------------|
-| `/kyrotech` | Analyze a player's roster for kyrotech requirements |
-| `/rote-platoon` | Analyze guild for RotE platoon requirements |
-| `/rote-farm` | Personal farm recommendations based on guild needs |
-| `/rote-bonus-readiness` | Analyze guild readiness for RotE bonus zones |
-
-Slash commands generally mirror CLI parameters (ally code, max-phase, etc.).
-`/rote-platoon` does not expose the `limited` output format; use the CLI `uv run rote-limited <ally_code>` for that report.
+Note: `/rote-platoon` on Discord intentionally excludes the `limited` output mode. Use CLI `rote-limited` for that view.
 
 ## Caching
 
-API responses are cached in `data/` for 1 hour. Delete the folder to force a refresh.
-- Player ally codes must be synced with SWGOH.gg
+API responses are cached under `data/` for about 1 hour.
+
+To force fresh fetches:
+- use `--refresh` where supported
+- or clear cached files in `data/`

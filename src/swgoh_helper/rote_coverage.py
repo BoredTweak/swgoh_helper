@@ -345,14 +345,28 @@ def filter_requirements_by_phase(
         included_phases.add(phase)
         included_phases.add(f"{phase}b")  # Include bonus planet for this phase
 
+    territory_phase_map = (
+        requirements.territory_phase_map() or RoteConfig.TERRITORY_PHASE
+    )
+
     filtered_reqs = []
     for req in requirements.requirements:
-        territory_phase = RoteConfig.TERRITORY_PHASE.get(req.territory, "99")
+        territory_phase = territory_phase_map.get(req.territory, "99")
         if territory_phase in included_phases:
             filtered_reqs.append(req)
+
+    filtered_territories = [
+        territory
+        for territory in requirements.territories
+        if territory_phase_map.get(territory.territory, "99") in included_phases
+    ]
 
     return SimpleRoteRequirements(
         version=requirements.version,
         last_updated=requirements.last_updated,
+        notes=requirements.notes,
+        source_metadata=requirements.source_metadata,
+        platoon_rules=requirements.platoon_rules,
+        territories=filtered_territories,
         requirements=filtered_reqs,
     )

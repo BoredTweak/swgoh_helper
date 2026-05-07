@@ -23,6 +23,8 @@ class RotePresenter:
         gap_analyzer: GapAnalyzer,
         bottleneck_analyzer: BottleneckAnalyzer,
         output_format: str = "all",
+        limited_output_format: str = "member",
+        verbose: bool = False,
         requester_ally_code: int | None = None,
         bonus_readiness: Optional[Dict[str, BonusZoneReadiness]] = None,
     ) -> str:
@@ -39,7 +41,7 @@ class RotePresenter:
             )
 
         if output_format == "owners":
-            lines.extend(self._format_requirement_owners(analyzer))
+            lines.extend(self._format_requirement_owners(analyzer, verbose=verbose))
 
         if output_format == "mine":
             lines.extend(
@@ -48,12 +50,30 @@ class RotePresenter:
 
         if output_format == "limited":
             lines.extend(
-                self._format_limited_availability_owners(analyzer, bottleneck_analyzer)
+                self._format_limited_availability(
+                    analyzer,
+                    bottleneck_analyzer,
+                    limited_output_format,
+                )
             )
 
         return "\n".join(lines)
 
-    def _format_limited_availability_owners(
+    def _format_limited_availability(
+        self,
+        analyzer: CoverageAnalyzer,
+        bottleneck_analyzer: BottleneckAnalyzer,
+        limited_output_format: str,
+    ) -> list[str]:
+        """Format the limited view using either member or relic ownership grouping."""
+        if limited_output_format == "relic":
+            return self._format_limited_availability_by_relic(analyzer)
+        return self._format_limited_availability_by_member(
+            analyzer,
+            bottleneck_analyzer,
+        )
+
+    def _format_limited_availability_by_member(
         self,
         analyzer: CoverageAnalyzer,
         bottleneck_analyzer: BottleneckAnalyzer,
@@ -88,6 +108,48 @@ class RotePresenter:
             )
 
         return lines
+
+    def _format_limited_availability_by_relic(
+        self,
+        analyzer: CoverageAnalyzer,
+    ) -> list[str]:
+        """Format all required characters grouped by required relic with owner counts."""
+        lines = ["", "**ROTE Character Ownership by Required Relic**"]
+        grouped = self._group_character_requirements_by_relic(analyzer)
+        if not grouped:
+            lines.append("No character requirements found.")
+            return lines
+
+        for relic_tier in sorted(grouped):
+            lines.append(f"R{relic_tier}:")
+            rows = sorted(grouped[relic_tier], key=lambda row: (row[1], -row[2], row[0]))
+            for unit_name, owner_count, slots_needed in rows:
+                owner_word = "owner" if owner_count == 1 else "owners"
+                lines.append(
+                    f"- {unit_name}: {owner_count} {owner_word} (need {slots_needed})"
+                )
+            lines.append("")
+
+        return lines[:-1]
+
+    def _group_character_requirements_by_relic(
+        self,
+        analyzer: CoverageAnalyzer,
+    ) -> dict[int, list[tuple[str, int, int]]]:
+        """Return relic -> [(unit_name, owner_count, slots_needed)] for all character requirements."""
+        aggregated: dict[tuple[str, int], tuple[str, int]] = {}
+        for requirement in analyzer.requirements.requirements:
+            if self._is_ship_requirement(requirement, analyzer):
+                continue
+            key = (requirement.unit_id, requirement.min_relic)
+            unit_name, slots_needed = aggregated.get(key, (requirement.unit_name, 0))
+            aggregated[key] = (unit_name, slots_needed + requirement.count)
+
+        grouped: dict[int, list[tuple[str, int, int]]] = defaultdict(list)
+        for (unit_id, min_relic), (unit_name, slots_needed) in aggregated.items():
+            owner_count = len(analyzer.matrix.get_players_at_relic(unit_id, min_relic))
+            grouped[min_relic].append((unit_name, owner_count, slots_needed))
+        return grouped
 
     def _is_character_unit(self, analyzer: CoverageAnalyzer, unit_id: str) -> bool:
         """Check whether a unit is a character in guild coverage data."""
@@ -353,7 +415,9 @@ class RotePresenter:
         ]
         return lines
 
-    def _format_requirement_owners(self, analyzer: CoverageAnalyzer) -> list[str]:
+    def _format_requirement_owners(
+        self, analyzer: CoverageAnalyzer, verbose: bool = False
+    ) -> list[str]:
         """Format platoon requirement owners grouped by territory."""
         lines = ["", "**Requirement Owners**"]
         territories = self._group_requirements_by_territory(analyzer)
@@ -362,7 +426,13 @@ class RotePresenter:
             phase = RoteConfig.TERRITORY_PHASE.get(territory, "?")
             lines.append(f"P{phase} {territory}:")
             for requirement in requirements:
-                lines.append(self._format_requirement_owner_line(requirement, analyzer))
+                lines.append(
+                    self._format_requirement_owner_line(
+                        requirement,
+                        analyzer,
+                        verbose=verbose,
+                    )
+                )
             lines.append("")
 
         return lines
@@ -385,19 +455,52 @@ class RotePresenter:
         )
 
     def _format_requirement_owner_line(
-        self, requirement, analyzer: CoverageAnalyzer
+        self, requirement, analyzer: CoverageAnalyzer, verbose: bool = False
     ) -> str:
-        """Format a single requirement line with all qualifying owners."""
+        """Format a single requirement line with qualifying owners."""
         players = analyzer.matrix.get_players_at_relic(
             requirement.unit_id, requirement.min_relic
         )
         owner_names = sorted(player.player_name for player in players)
-        owners = ", ".join(owner_names) if owner_names else "(none)"
+        owners = self._format_requirement_owners_list(
+            owner_names,
+            requirement_count=requirement.count,
+            verbose=verbose,
+        )
         count_suffix = f" x{requirement.count}" if requirement.count > 1 else ""
         return (
             f"- {requirement.unit_name} R{requirement.min_relic}{count_suffix}: "
             f"{owners}"
         )
+
+    def _format_requirement_owners_list(
+        self,
+        owner_names: list[str],
+        requirement_count: int,
+        verbose: bool,
+    ) -> str:
+        """Format owner names compactly unless requirement has limited availability."""
+        if not owner_names:
+            return "(none)"
+
+        if verbose or self._is_limited_availability(
+            len(owner_names), requirement_count
+        ):
+            return ", ".join(owner_names)
+
+        shown = owner_names[: max(0, requirement_count)]
+        shown_text = ", ".join(shown)
+        hidden_count = len(owner_names) - len(shown)
+        if hidden_count <= 0:
+            return shown_text
+
+        if shown_text:
+            return f"{shown_text} and {hidden_count} more"
+        return f"and {hidden_count} more"
+
+    def _is_limited_availability(self, owner_count: int, slots_needed: int) -> bool:
+        """A unit is limited unless it has at least LIMITED_AVAILABILITY_CALLOUT_THRESHOLD extra owners beyond required slots."""
+        return owner_count < (slots_needed + LIMITED_AVAILABILITY_CALLOUT_THRESHOLD)
 
     def _format_slots_per_territory(self, slots_per_territory: dict[str, int]) -> str:
         """Format slots per territory with phase prefixes for compact display."""

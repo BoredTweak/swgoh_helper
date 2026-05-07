@@ -99,6 +99,143 @@ def test_output_format_owners_groups_requirements_by_territory():
     assert "- Grand Admiral Thrawn R5: (none)" in output
 
 
+def test_output_format_owners_truncates_non_limited_units():
+    """Owners view should keep non-limited units compact with an overflow suffix."""
+    requirements = SimpleRoteRequirements(
+        last_updated="2026-04-01",
+        requirements=[
+            UnitRequirement(
+                unit_id="VADER",
+                unit_name="Darth Vader",
+                min_relic=7,
+                path=RotePath.DARK_SIDE,
+                territory="Mustafar",
+                count=2,
+            )
+        ],
+    )
+    matrix = CoverageMatrix(
+        guild_name="Test Guild",
+        guild_id="guild-1",
+        member_count=7,
+        units={
+            "VADER": UnitCoverage(
+                unit_id="VADER",
+                unit_name="Darth Vader",
+                alignment=2,
+                combat_type=CombatType.CHARACTER,
+                players_by_relic={
+                    7: [
+                        PlayerUnitInfo(
+                            player_name="A", ally_code=111111111, relic_tier=7
+                        ),
+                        PlayerUnitInfo(
+                            player_name="B", ally_code=222222222, relic_tier=7
+                        ),
+                        PlayerUnitInfo(
+                            player_name="C", ally_code=333333333, relic_tier=7
+                        ),
+                        PlayerUnitInfo(
+                            player_name="D", ally_code=444444444, relic_tier=7
+                        ),
+                        PlayerUnitInfo(
+                            player_name="E", ally_code=555555555, relic_tier=7
+                        ),
+                        PlayerUnitInfo(
+                            player_name="F", ally_code=666666666, relic_tier=7
+                        ),
+                        PlayerUnitInfo(
+                            player_name="G", ally_code=777777777, relic_tier=7
+                        ),
+                    ]
+                },
+            )
+        },
+    )
+    analyzer = CoverageAnalyzer(matrix, requirements)
+    gap_analyzer = GapAnalyzer(matrix, requirements)
+    bottleneck_analyzer = BottleneckAnalyzer(matrix, requirements)
+
+    output = RotePresenter().format_results(
+        analyzer,
+        matrix,
+        gap_analyzer,
+        bottleneck_analyzer,
+        output_format="owners",
+    )
+
+    assert "- Darth Vader R7 x2: A, B and 5 more" in output
+
+
+def test_output_format_owners_verbose_shows_all_owners():
+    """Verbose owners view should always list every qualifying owner."""
+    requirements = SimpleRoteRequirements(
+        last_updated="2026-04-01",
+        requirements=[
+            UnitRequirement(
+                unit_id="VADER",
+                unit_name="Darth Vader",
+                min_relic=7,
+                path=RotePath.DARK_SIDE,
+                territory="Mustafar",
+                count=2,
+            )
+        ],
+    )
+    matrix = CoverageMatrix(
+        guild_name="Test Guild",
+        guild_id="guild-1",
+        member_count=7,
+        units={
+            "VADER": UnitCoverage(
+                unit_id="VADER",
+                unit_name="Darth Vader",
+                alignment=2,
+                combat_type=CombatType.CHARACTER,
+                players_by_relic={
+                    7: [
+                        PlayerUnitInfo(
+                            player_name="A", ally_code=111111111, relic_tier=7
+                        ),
+                        PlayerUnitInfo(
+                            player_name="B", ally_code=222222222, relic_tier=7
+                        ),
+                        PlayerUnitInfo(
+                            player_name="C", ally_code=333333333, relic_tier=7
+                        ),
+                        PlayerUnitInfo(
+                            player_name="D", ally_code=444444444, relic_tier=7
+                        ),
+                        PlayerUnitInfo(
+                            player_name="E", ally_code=555555555, relic_tier=7
+                        ),
+                        PlayerUnitInfo(
+                            player_name="F", ally_code=666666666, relic_tier=7
+                        ),
+                        PlayerUnitInfo(
+                            player_name="G", ally_code=777777777, relic_tier=7
+                        ),
+                    ]
+                },
+            )
+        },
+    )
+    analyzer = CoverageAnalyzer(matrix, requirements)
+    gap_analyzer = GapAnalyzer(matrix, requirements)
+    bottleneck_analyzer = BottleneckAnalyzer(matrix, requirements)
+
+    output = RotePresenter().format_results(
+        analyzer,
+        matrix,
+        gap_analyzer,
+        bottleneck_analyzer,
+        output_format="owners",
+        verbose=True,
+    )
+
+    assert "- Darth Vader R7 x2: A, B, C, D, E, F, G" in output
+
+
 def test_output_format_gaps_only_shows_gap_sections():
     """Presenter should support rendering only gap-related sections."""
     requirements = SimpleRoteRequirements(
@@ -743,6 +880,155 @@ def test_output_format_limited_counts_unique_character_requirements_per_member()
     assert "- Beta: 2 limited availability characters" in output
     assert "- Charlie: 1 limited availability character" in output
     assert "- Delta: 1 limited availability character" in output
+
+
+def test_output_format_limited_relic_groups_all_characters_by_required_relic():
+    """Relic-limited view should include all required characters grouped by required relic."""
+    requirements = SimpleRoteRequirements(
+        last_updated="2026-04-01",
+        requirements=[
+            UnitRequirement(
+                unit_id="VADER",
+                unit_name="Darth Vader",
+                min_relic=7,
+                path=RotePath.DARK_SIDE,
+                territory="Mustafar",
+                count=2,
+            ),
+            UnitRequirement(
+                unit_id="VADER",
+                unit_name="Darth Vader",
+                min_relic=7,
+                path=RotePath.DARK_SIDE,
+                territory="Dathomir",
+                count=1,
+            ),
+            UnitRequirement(
+                unit_id="THRAWN",
+                unit_name="Grand Admiral Thrawn",
+                min_relic=5,
+                path=RotePath.DARK_SIDE,
+                territory="Mustafar",
+                count=1,
+            ),
+            UnitRequirement(
+                unit_id="TARKIN",
+                unit_name="Grand Moff Tarkin",
+                min_relic=5,
+                path=RotePath.DARK_SIDE,
+                territory="Mustafar",
+                count=4,
+            ),
+            UnitRequirement(
+                unit_id="MFALCON",
+                unit_name="Millennium Falcon",
+                min_relic=7,
+                path=RotePath.DARK_SIDE,
+                territory="Mustafar",
+                count=2,
+                unit_type=UnitType.SHIP,
+            ),
+        ],
+    )
+    matrix = CoverageMatrix(
+        guild_name="Test Guild",
+        guild_id="guild-1",
+        member_count=5,
+        units={
+            "VADER": UnitCoverage(
+                unit_id="VADER",
+                unit_name="Darth Vader",
+                alignment=2,
+                combat_type=CombatType.CHARACTER,
+                players_by_relic={
+                    7: [
+                        PlayerUnitInfo(
+                            player_name="Alpha",
+                            ally_code=111111111,
+                            relic_tier=7,
+                        ),
+                        PlayerUnitInfo(
+                            player_name="Beta",
+                            ally_code=222222222,
+                            relic_tier=7,
+                        ),
+                    ]
+                },
+            ),
+            "THRAWN": UnitCoverage(
+                unit_id="THRAWN",
+                unit_name="Grand Admiral Thrawn",
+                alignment=2,
+                combat_type=CombatType.CHARACTER,
+                players_by_relic={
+                    5: [
+                        PlayerUnitInfo(
+                            player_name="Alpha",
+                            ally_code=111111111,
+                            relic_tier=5,
+                        )
+                    ]
+                },
+            ),
+            "TARKIN": UnitCoverage(
+                unit_id="TARKIN",
+                unit_name="Grand Moff Tarkin",
+                alignment=2,
+                combat_type=CombatType.CHARACTER,
+                players_by_relic={
+                    5: [
+                        PlayerUnitInfo(
+                            player_name="Alpha",
+                            ally_code=111111111,
+                            relic_tier=5,
+                        ),
+                        PlayerUnitInfo(
+                            player_name="Beta",
+                            ally_code=222222222,
+                            relic_tier=5,
+                        ),
+                        PlayerUnitInfo(
+                            player_name="Charlie",
+                            ally_code=333333333,
+                            relic_tier=5,
+                        ),
+                        PlayerUnitInfo(
+                            player_name="Delta",
+                            ally_code=444444444,
+                            relic_tier=5,
+                        ),
+                    ]
+                },
+            ),
+            "MFALCON": UnitCoverage(
+                unit_id="MFALCON",
+                unit_name="Millennium Falcon",
+                alignment=2,
+                combat_type=CombatType.SHIP,
+                players_by_relic={7: []},
+            ),
+        },
+    )
+    analyzer = CoverageAnalyzer(matrix, requirements)
+    gap_analyzer = GapAnalyzer(matrix, requirements)
+    bottleneck_analyzer = BottleneckAnalyzer(matrix, requirements)
+
+    output = RotePresenter().format_results(
+        analyzer,
+        matrix,
+        gap_analyzer,
+        bottleneck_analyzer,
+        output_format="limited",
+        limited_output_format="relic",
+    )
+
+    assert "**ROTE Character Ownership by Required Relic**" in output
+    assert "R5:" in output
+    assert "R7:" in output
+    assert "- Grand Admiral Thrawn: 1 owner (need 1)" in output
+    assert "- Grand Moff Tarkin: 4 owners (need 4)" in output
+    assert "- Darth Vader: 2 owners (need 3)" in output
+    assert "Millennium Falcon" not in output
 
 
 def test_output_format_mine_sorts_scarcest_units_first_within_territory():

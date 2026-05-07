@@ -1,8 +1,9 @@
 import dotenv
 import os
 import sys
-import traceback
 import requests
+import click
+from pathlib import Path
 from typing import Optional
 
 from .data_access import SwgohDataService
@@ -23,13 +24,15 @@ from .models import VALID_ROTE_OUTPUT_FORMATS
 from .rote_gap_analyzer import GapAnalyzer
 from .rote_bottleneck_analyzer import BottleneckAnalyzer
 from .rote_presenter import RotePresenter
-from .rote_bonus_readiness import BonusReadinessAnalyzer
+from .rote_bonus_readiness import BonusReadinessAnalyzer, BonusReadinessApp
 from .exceptions import AppExecutionError
 
 
 dotenv.load_dotenv()
 
 SWGOH_API_KEY = os.getenv("SWGOH_API_KEY")
+
+VALID_ROTE_LIMITED_OUTPUT_FORMATS = {"member", "relic"}
 
 
 class KyrotechAnalysisApp:
@@ -257,6 +260,8 @@ class RotePlatoonApp:
         max_phase: Optional[str] = None,
         refresh: bool = False,
         output_format: str = "gaps",
+        limited_output_format: str = "member",
+        verbose: bool = False,
         ignored_players: Optional[list[str]] = None,
     ) -> str:
         """Fetch guild information and analyze platoon coverage."""
@@ -264,7 +269,16 @@ class RotePlatoonApp:
             if output_format not in VALID_ROTE_OUTPUT_FORMATS:
                 raise ValueError(
                     "Invalid --output-format. "
-                    "Expected one of: all, coverage, gaps, owners, mine"
+                    "Expected one of: all, coverage, gaps, owners, mine, limited"
+                )
+
+            if (
+                output_format == "limited"
+                and limited_output_format not in VALID_ROTE_LIMITED_OUTPUT_FORMATS
+            ):
+                raise ValueError(
+                    "Invalid --output-format for rote-limited. "
+                    "Expected one of: member, relic"
                 )
 
             guild_id, guild_name, member_ally_codes = (
@@ -332,7 +346,10 @@ class RotePlatoonApp:
                 "Mandalore": bonus_analyzer.analyze_mandalore_readiness(rosters),
             }
 
-            self.progress.update(f"Formatting output: {output_format}...")
+            display_output_format = output_format
+            if output_format == "limited":
+                display_output_format = f"{output_format}/{limited_output_format}"
+            self.progress.update(f"Formatting output: {display_output_format}...")
             presenter = RotePresenter()
             requester_ally_code = int(ally_code.replace("-", ""))
             return presenter.format_results(
@@ -341,6 +358,8 @@ class RotePlatoonApp:
                 gap_analyzer,
                 bottleneck_analyzer,
                 output_format=output_format,
+                limited_output_format=limited_output_format,
+                verbose=verbose,
                 requester_ally_code=requester_ally_code,
                 bonus_readiness=bonus_readiness,
             )
@@ -475,10 +494,13 @@ def print_usage():
     )
     print()
     print(
-        "  rote_limited <ally_code> [--max-phase N] [--refresh] [--ignore-players PLAYER1,PLAYER2,...]"
+        "  rote_limited <ally_code> [--max-phase N] [--refresh] [--output-format member|relic] [--ignore-players PLAYER1,PLAYER2,...]"
     )
     print(
-        "                            List members with count of limited-availability character requirements"
+        "                            member: per-member limited-character counts"
+    )
+    print(
+        "                            relic: all required characters grouped by required relic and owners"
     )
     print()
     print(
@@ -493,232 +515,256 @@ def print_usage():
     )
     print("                            --include-unowned: Include units you don't own")
     print()
+    print("  rote-bonus-readiness <guild_id>")
+    print("                            Analyze guild readiness for RotE bonus zones")
+    print()
     print("Examples:")
     print("  python app.py kyrotech 123-456-789")
     print("  python app.py rote_platoon 123-456-789")
     print("  python app.py rote_platoon 123-456-789 --max-phase 4")
     print("  python app.py rote_platoon 123-456-789 --refresh")
     print("  python app.py rote_farm 123-456-789 --max-phase 4")
+    print("  python app.py rote-bonus-readiness guild_abc123")
 
 
 def run_kyrotech():
     """Entry point for kyrotech CLI command."""
-    if len(sys.argv) < 2:
-        print(
-            "Usage: kyrotech <ally_code> [--faction FACTION_NAME] [--include-unowned] [--verbose]"
-        )
-        print("Example: kyrotech 123-456-789")
-        print("         kyrotech 123-456-789 --faction Empire")
-        print("         kyrotech 123-456-789 --include-unowned")
-        print("         kyrotech 123-456-789 --verbose")
-        sys.exit(1)
+    _run_click_command(_kyrotech_cli, "kyrotech")
 
+
+def _require_api_key() -> str:
     if not SWGOH_API_KEY:
-        print("Error: SWGOH_API_KEY not found in environment variables")
-        print("Please create a .env file with your API key")
-        sys.exit(1)
+        raise click.ClickException(
+            "SWGOH_API_KEY not found in environment variables. "
+            "Please create a .env file with your API key"
+        )
+    return SWGOH_API_KEY
 
-    ally_code = sys.argv[1]
-    faction = None
-    include_unowned = "--include-unowned" in sys.argv
-    verbose = "--verbose" in sys.argv
 
-    for i, arg in enumerate(sys.argv[2:], start=2):
-        if arg == "--faction" and i + 1 < len(sys.argv):
-            faction = sys.argv[i + 1]
-            break
+def _resolve_ally_code(ally_code: str | None, ally_code_option: str | None) -> str:
+    resolved = ally_code_option or ally_code
+    if not resolved:
+        raise click.ClickException(
+            "Missing ally code. Provide <ally_code> or --ally-code <ally_code>."
+        )
+    return resolved
 
-    app = KyrotechAnalysisApp(SWGOH_API_KEY)
+
+def _parse_ignored_players(values: tuple[str, ...]) -> list[str]:
+    ignored_players: list[str] = []
+    for value in values:
+        for token in value.replace(";", ",").split(","):
+            parsed = token.strip()
+            if parsed:
+                ignored_players.append(parsed)
+    return ignored_players
+
+
+def _retired_output_option(
+    _ctx: click.Context, param: click.Option, value: bool
+) -> bool:
+    if value:
+        raise click.BadOptionUsage(
+            param.name or "option",
+            f"{param.opts[0]} has been retired. Use --output-format instead.",
+        )
+    return value
+
+
+def _run_click_command(command: click.Command, prog_name: str) -> None:
+    try:
+        command.main(args=sys.argv[1:], prog_name=prog_name, standalone_mode=False)
+    except click.ClickException as e:
+        e.show()
+        sys.exit(e.exit_code)
+    except click.exceptions.Exit as e:
+        sys.exit(e.exit_code)
+
+
+@click.command()
+@click.argument("ally_code", required=False)
+@click.option("--ally-code", "ally_code_option", type=str)
+@click.option("--faction", type=str)
+@click.option("--include-unowned", is_flag=True, default=False)
+@click.option("--verbose", is_flag=True, default=False)
+def _kyrotech_cli(
+    ally_code: str | None,
+    ally_code_option: str | None,
+    faction: str | None,
+    include_unowned: bool,
+    verbose: bool,
+) -> None:
+    resolved_ally_code = _resolve_ally_code(ally_code, ally_code_option)
+    api_key = _require_api_key()
+
+    app = KyrotechAnalysisApp(api_key)
     try:
         if faction:
             output = app.find_all_faction_kyrotech(
-                ally_code, faction, include_unowned, verbose
+                resolved_ally_code, faction, include_unowned, verbose
             )
         else:
-            output = app.analyze_player(ally_code, include_unowned, verbose)
+            output = app.analyze_player(resolved_ally_code, include_unowned, verbose)
         print(output)
     except AppExecutionError as e:
-        print(str(e))
-        traceback.print_exc()
-        sys.exit(1)
+        raise click.ClickException(str(e)) from e
 
 
-def _parse_rote_platoon_args(start_index: int) -> dict[str, object]:
-    """Parse rote-platoon options."""
-    max_phase = None
-    refresh = False
-    output_format_arg = None
-    ignored_players: list[str] = []
+@click.command()
+@click.argument("ally_code", required=False)
+@click.option("--ally-code", "ally_code_option", type=str)
+@click.option("--max-phase", type=str)
+@click.option("--refresh", is_flag=True, default=False)
+@click.option(
+    "--output-format",
+    type=click.Choice(sorted(VALID_ROTE_OUTPUT_FORMATS), case_sensitive=False),
+    default="gaps",
+)
+@click.option("--verbose", is_flag=True, default=False)
+@click.option("--ignore-players", "--ignored-players", "ignored_values", multiple=True)
+@click.option(
+    "--by-territory",
+    is_flag=True,
+    expose_value=False,
+    callback=_retired_output_option,
+)
+@click.option(
+    "--show-owners",
+    is_flag=True,
+    expose_value=False,
+    callback=_retired_output_option,
+)
+def _rote_platoon_cli(
+    ally_code: str | None,
+    ally_code_option: str | None,
+    max_phase: str | None,
+    refresh: bool,
+    output_format: str,
+    verbose: bool,
+    ignored_values: tuple[str, ...],
+) -> None:
+    resolved_ally_code = _resolve_ally_code(ally_code, ally_code_option)
+    api_key = _require_api_key()
+    ignored_players = _parse_ignored_players(ignored_values)
+    if ignored_players:
+        print(f"Ignoring players: {', '.join(ignored_players)}")
 
-    i = start_index
-    while i < len(sys.argv):
-        arg = sys.argv[i]
-
-        if arg == "--max-phase" and i + 1 < len(sys.argv):
-            max_phase = sys.argv[i + 1]
-            i += 2
-            continue
-
-        if arg == "--refresh":
-            refresh = True
-            i += 1
-            continue
-
-        if arg == "--output-format" and i + 1 < len(sys.argv):
-            output_format_arg = sys.argv[i + 1].lower()
-            i += 2
-            continue
-
-        if arg in {"--by-territory", "--show-owners"}:
-            raise ValueError(f"{arg} has been retired. Use --output-format instead.")
-
-        if arg in {"--ignore-players", "--ignored-players"}:
-            i += 1
-            ignored_chunks: list[str] = []
-            while i < len(sys.argv) and not sys.argv[i].startswith("--"):
-                ignored_chunks.append(sys.argv[i])
-                i += 1
-
-            ignored_text = " ".join(ignored_chunks)
-            ignored_players = [
-                p.strip()
-                for p in ignored_text.replace(";", ",").split(",")
-                if p.strip()
-            ]
-            if ignored_players:
-                print(f"Ignoring players: {', '.join(ignored_players)}")
-            continue
-
-        i += 1
-
-    output_format = output_format_arg or "gaps"
-
-    return {
-        "max_phase": max_phase,
-        "refresh": refresh,
-        "output_format": output_format,
-        "ignored_players": ignored_players,
-    }
-
-
-def run_rote_platoon():
-    """Entry point for rote-platoon CLI command."""
-    if len(sys.argv) < 2:
-        print(
-            "Usage: rote-platoon <ally_code> [--max-phase N] [--refresh] [--output-format FORMAT] [--ignore-players PLAYER1,PLAYER2,...]"
-        )
-        sys.exit(1)
-
-    if not SWGOH_API_KEY:
-        print("Error: SWGOH_API_KEY not found in environment variables")
-        print("Please create a .env file with your API key")
-        sys.exit(1)
-
-    ally_code = sys.argv[1]
-    try:
-        options = _parse_rote_platoon_args(start_index=2)
-    except ValueError as e:
-        print(f"Error: {e}")
-        sys.exit(1)
-
-    app = RotePlatoonApp(SWGOH_API_KEY)
+    app = RotePlatoonApp(api_key)
     try:
         output = app.analyze_guild(
-            ally_code,
-            max_phase=options["max_phase"],
-            refresh=options["refresh"],
-            output_format=options["output_format"],
-            ignored_players=options["ignored_players"],
+            resolved_ally_code,
+            max_phase=max_phase,
+            refresh=refresh,
+            output_format=output_format.lower(),
+            verbose=verbose,
+            ignored_players=ignored_players,
         )
         print(output)
     except AppExecutionError as e:
-        print(str(e))
-        traceback.print_exc()
-        sys.exit(1)
+        raise click.ClickException(str(e)) from e
 
 
-def run_rote_limited():
-    """Entry point for rote-limited CLI command."""
-    if len(sys.argv) < 2:
-        print(
-            "Usage: rote-limited <ally_code> [--max-phase N] [--refresh] [--ignore-players PLAYER1,PLAYER2,...]"
-        )
-        sys.exit(1)
+@click.command()
+@click.argument("ally_code", required=False)
+@click.option("--ally-code", "ally_code_option", type=str)
+@click.option("--max-phase", type=str)
+@click.option("--refresh", is_flag=True, default=False)
+@click.option(
+    "--output-format",
+    "limited_output_format",
+    type=click.Choice(sorted(VALID_ROTE_LIMITED_OUTPUT_FORMATS), case_sensitive=False),
+    default="member",
+)
+@click.option("--ignore-players", "--ignored-players", "ignored_values", multiple=True)
+def _rote_limited_cli(
+    ally_code: str | None,
+    ally_code_option: str | None,
+    max_phase: str | None,
+    refresh: bool,
+    limited_output_format: str,
+    ignored_values: tuple[str, ...],
+) -> None:
+    resolved_ally_code = _resolve_ally_code(ally_code, ally_code_option)
+    api_key = _require_api_key()
+    ignored_players = _parse_ignored_players(ignored_values)
+    if ignored_players:
+        print(f"Ignoring players: {', '.join(ignored_players)}")
 
-    if not SWGOH_API_KEY:
-        print("Error: SWGOH_API_KEY not found in environment variables")
-        print("Please create a .env file with your API key")
-        sys.exit(1)
-
-    ally_code = sys.argv[1]
-    try:
-        options = _parse_rote_platoon_args(start_index=2)
-    except ValueError as e:
-        print(f"Error: {e}")
-        sys.exit(1)
-
-    app = RotePlatoonApp(SWGOH_API_KEY)
+    app = RotePlatoonApp(api_key)
     try:
         output = app.analyze_guild(
-            ally_code,
-            max_phase=options["max_phase"],
-            refresh=options["refresh"],
+            resolved_ally_code,
+            max_phase=max_phase,
+            refresh=refresh,
             output_format="limited",
-            ignored_players=options["ignored_players"],
+            limited_output_format=limited_output_format.lower(),
+            ignored_players=ignored_players,
         )
         print(output)
     except AppExecutionError as e:
-        print(str(e))
-        traceback.print_exc()
-        sys.exit(1)
+        raise click.ClickException(str(e)) from e
 
 
-def run_rote_farm():
-    """Entry point for rote-farm CLI command."""
-    if len(sys.argv) < 2:
-        print(
-            "Usage: rote-farm <ally_code> [--max-phase N] [--max-recommendations N] [--include-unowned]"
-        )
-        print()
-        print("Options:")
-        print("  --max-phase N         Limit to phases 1-N (default: all)")
-        print(
-            "  --max-recommendations N  Maximum recommendations to show (default: 15)"
-        )
-        print("  --include-unowned     Include units you don't own yet")
-        sys.exit(1)
+@click.command()
+@click.argument("ally_code", required=False)
+@click.option("--ally-code", "ally_code_option", type=str)
+@click.option("--max-phase", type=str)
+@click.option("--max-recommendations", type=int, default=15)
+@click.option("--include-unowned", is_flag=True, default=False)
+def _rote_farm_cli(
+    ally_code: str | None,
+    ally_code_option: str | None,
+    max_phase: str | None,
+    max_recommendations: int,
+    include_unowned: bool,
+) -> None:
+    resolved_ally_code = _resolve_ally_code(ally_code, ally_code_option)
+    api_key = _require_api_key()
 
-    if not SWGOH_API_KEY:
-        print("Error: SWGOH_API_KEY not found in environment variables")
-        print("Please create a .env file with your API key")
-        sys.exit(1)
-
-    ally_code = sys.argv[1]
-    max_phase = None
-    max_recommendations = 15
-    include_unowned = False
-
-    for i, arg in enumerate(sys.argv[2:], start=2):
-        if arg == "--max-phase" and i + 1 < len(sys.argv):
-            max_phase = sys.argv[i + 1]
-        elif arg == "--max-recommendations" and i + 1 < len(sys.argv):
-            max_recommendations = int(sys.argv[i + 1])
-        elif arg == "--include-unowned":
-            include_unowned = True
-
-    app = RoteFarmAdvisorApp(SWGOH_API_KEY)
+    app = RoteFarmAdvisorApp(api_key)
     try:
         output = app.recommend_for_player(
-            ally_code,
+            resolved_ally_code,
             max_phase=max_phase,
             max_recommendations=max_recommendations,
             include_unowned=include_unowned,
         )
         print(output)
     except AppExecutionError as e:
-        print(str(e))
-        traceback.print_exc()
-        sys.exit(1)
+        raise click.ClickException(str(e)) from e
+
+
+@click.command()
+@click.argument("guild_id")
+def _rote_bonus_readiness_cli(guild_id: str) -> None:
+    try:
+        print(BonusReadinessApp().analyze(guild_id))
+    except FileNotFoundError as e:
+        raise click.ClickException(
+            f"{e}\nRun 'rote-platoon <ally_code>' first to populate the cache."
+        ) from e
+    except Exception as e:
+        raise click.ClickException(str(e)) from e
+
+
+def run_rote_platoon():
+    """Entry point for rote-platoon CLI command."""
+    _run_click_command(_rote_platoon_cli, "rote-platoon")
+
+
+def run_rote_limited():
+    """Entry point for rote-limited CLI command."""
+    _run_click_command(_rote_limited_cli, "rote-limited")
+
+
+def run_rote_farm():
+    """Entry point for rote-farm CLI command."""
+    _run_click_command(_rote_farm_cli, "rote-farm")
+
+
+def run_rote_bonus_readiness():
+    """Entry point for rote-bonus-readiness CLI command."""
+    _run_click_command(_rote_bonus_readiness_cli, "rote-bonus-readiness")
 
 
 def main():
@@ -737,6 +783,8 @@ def main():
         "rote-limited": run_rote_limited,
         "rote_farm": run_rote_farm,
         "rote-farm": run_rote_farm,
+        "rote_bonus_readiness": run_rote_bonus_readiness,
+        "rote-bonus-readiness": run_rote_bonus_readiness,
     }
 
     handler = handlers.get(command)

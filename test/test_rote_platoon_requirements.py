@@ -105,5 +105,70 @@ def test_planet_count_breakdown(rote_requirements):
             print(f"  {territory}: {count} {status}")
 
 
+def test_territory_metadata_matches_operation_rules(rote_requirements):
+    """Verify each territory exposes consistent platoon scoring metadata."""
+    platoon_rules = rote_requirements["platoon_rules"]
+    territories = rote_requirements["territories"]
+
+    expected_gp_per_operation = {
+        "Mustafar": 10_000_000,
+        "Corellia": 10_000_000,
+        "Coruscant": 10_000_000,
+        "Geonosis": 11_000_000,
+        "Felucia": 11_000_000,
+        "Bracca": 11_000_000,
+        "Dathomir": 13_200_000,
+        "Tatooine": 13_200_000,
+        "Kashyyyk": 13_200_000,
+        "Zeffo": 13_200_000,
+        "Haven-class Medical Station": 18_480_000,
+        "Kessel": 18_480_000,
+        "Lothal": 18_480_000,
+        "Mandalore": 18_480_000,
+        "Malachor": 33_264_000,
+        "Vandor": 33_264_000,
+        "Ring of Kafrene": 33_264_000,
+        "Death Star": 86_486_400,
+        "Hoth": 86_486_400,
+        "Scarif": 86_486_400,
+    }
+
+    assert platoon_rules["operations_per_planet"] == 6
+    assert platoon_rules["slots_per_operation"] == 15
+    assert "total_slots_per_planet" not in platoon_rules
+    assert len(territories) == 20
+
+    for territory in territories:
+        assert "operations_per_planet" not in territory
+        assert "slots_per_operation" not in territory
+        assert "total_slots" not in territory
+        assert "total_platoon_gp" not in territory
+        assert "operations" not in territory
+        assert (
+            territory["gp_per_operation"]
+            == expected_gp_per_operation[territory["territory"]]
+        )
+
+
+def test_territory_metadata_matches_flat_requirements(rote_requirements):
+    """Verify territory metadata stays aligned with the legacy flat requirement list."""
+    requirements = rote_requirements["requirements"]
+    territories = rote_requirements["territories"]
+
+    requirement_counts: dict[str, int] = defaultdict(int)
+    requirement_paths: dict[str, str] = {}
+
+    for req in requirements:
+        territory = req["territory"]
+        requirement_counts[territory] += req["count"]
+        requirement_paths[territory] = req["path"]
+
+    for territory in territories:
+        name = territory["territory"]
+        total_slots = 90  # 6 operations * 15 slots per operation
+        assert requirement_counts[name] == total_slots
+        assert requirement_paths[name] == territory["path"]
+
+
 if __name__ == "__main__":
     pytest.main([__file__, "-v"])

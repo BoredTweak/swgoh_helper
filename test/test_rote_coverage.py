@@ -9,6 +9,7 @@ from swgoh_helper.rote_coverage import (
     PathEligibilityFilter,
     RoteRequirementsLoader,
     CoverageAnalyzer,
+    filter_requirements_by_phase,
 )
 from swgoh_helper.rote_models import RotePath, UnitRequirement
 from swgoh_helper.models import (
@@ -366,14 +367,27 @@ def test_load_requirements():
     """Test loading requirements from JSON file."""
     requirements = RoteRequirementsLoader.load()
 
-    assert requirements.version == "1.0"
+    assert requirements.version == "1.1"
     assert len(requirements.requirements) > 0
+    assert len(requirements.territories) == 20
+    assert requirements.platoon_rules.operations_per_planet == 6
 
     # Check that we have requirements for all paths
     paths_found = {req.path for req in requirements.requirements}
     assert RotePath.DARK_SIDE in paths_found
     assert RotePath.NEUTRAL in paths_found
     assert RotePath.LIGHT_SIDE in paths_found
+
+
+def test_filter_requirements_by_phase_uses_territory_metadata():
+    """Test phase filtering against territory metadata from the JSON payload."""
+    requirements = RoteRequirementsLoader.load()
+
+    phase5 = filter_requirements_by_phase(requirements, "5")
+
+    filtered_territories = {territory.territory for territory in phase5.territories}
+    assert "Ring of Kafrene" in filtered_territories
+    assert "Scarif" not in filtered_territories
 
 
 # ============================================================================
