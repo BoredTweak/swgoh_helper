@@ -1,0 +1,140 @@
+[
+  {
+    "gl_name": "Supreme Leader Kylo Ren",
+    "requirements": [
+      {"unit_name": "Kylo Ren (Unmasked)", "required_relic": 7},
+      {"unit_name": "Kylo Ren", "required_relic": 7},
+      {"unit_name": "General Hux", "required_relic": 5},
+      {"unit_name": "Sith Trooper", "required_relic": 5},
+      {"unit_name": "Captain Phasma", "required_relic": 5},
+      {"unit_name": "First Order Stormtrooper", "required_relic": 5},
+      {"unit_name": "First Order Executioner", "required_relic": 5},
+      {"unit_name": "First Order TIE Pilot", "required_relic": 3},
+      {"unit_name": "First Order SF TIE Pilot", "required_relic": 3},
+      {"unit_name": "First Order Officer", "required_relic": 3},
+      {"unit_name": "Veteran Smuggler Han Solo", "required_relic": 3},
+      {"unit_name": "Veteran Smuggler Chewbacca", "required_relic": 3},
+      {"unit_name": "Finalizer", "required_stars": 5}
+    ]
+  },
+  {
+    "gl_name": "Rey",
+    "requirements": [
+      {"unit_name": "Jedi Training Rey", "required_relic": 7},
+      {"unit_name": "BB-8", "required_relic": 7},
+      {"unit_name": "Scavenger Rey", "required_relic": 7},
+      {"unit_name": "Finn", "required_relic": 5},
+      {"unit_name": "Poe Dameron", "required_relic": 5},
+      {"unit_name": "Resistance Hero Finn", "required_relic": 5},
+      {"unit_name": "Resistance Hero Poe", "required_relic": 5},
+      {"unit_name": "Amilyn Holdo", "required_relic": 5},
+      {"unit_name": "Rose Tico", "required_relic": 5},
+      {"unit_name": "Resistance Trooper", "required_relic": 3},
+      {"unit_name": "Resistance Pilot", "required_relic": 3},
+      {"unit_name": "Veteran Smuggler Han Solo", "required_relic": 3},
+      {"unit_name": "Veteran Smuggler Chewbacca", "required_relic": 3},
+      {"unit_name": "Raddus", "required_stars": 5}
+    ]
+  },
+  {
+    "gl_name": "Sith Eternal Emperor",
+    "requirements": [
+      {"unit_name": "Emperor Palpatine", "required_relic": 7},
+      {"unit_name": "Darth Vader", "required_relic": 7},
+      {"unit_name": "Admiral Piett", "required_relic": 8},
+      {"unit_name": "Darth Sidious", "required_relic": 7},
+      {"unit_name": "Darth Maul", "required_relic": 7},
+      {"unit_name": "Count Dooku", "required_relic": 6},
+      {"unit_name": "Director Krennic", "required_relic": 4},
+      {"unit_name": "Sith Marauder", "required_relic": 3},
+      {"unit_name": "Royal Guard", "required_relic": 3},
+      {"unit_name": "Grand Moff Tarkin", "required_relic": 3},
+      {"unit_name": "Colonel Starck", "required_relic": 3}
+    ]
+  },
+  {
+    "gl_name": "Jedi Master Luke Skywalker",
+    "requirements": [
+      {"unit_name": "Jedi Knight Luke Skywalker", "required_relic": 7},
+      {"unit_name": "Mon Mothma", "required_relic": 5},
+      {"unit_name": "Threepio & Chewie", "required_relic": 5},
+      {"unit_name": "C-3PO", "required_relic": 5},
+      {"unit_name": "Chewbacca", "required_relic": 6},
+      {"unit_name": "Han Solo", "required_relic": 6},
+      {"unit_name": "Wampa", "required_relic": 3},
+      {"unit_name": "Lando Calrissian", "required_relic": 3},
+      {"unit_name": "Rebel Officer Leia Organa", "required_relic": 3},
+      {"unit_name": "Captain Han Solo", "required_relic": 3},
+      {"unit_name": "Darth Vader", "required_relic": 3},
+      {"unit_name": "Hoth Rebel Scout", "required_relic": 3},
+      {"unit_name": "Rebel Y-wing", "required_stars": 5}
+    ]
+  },
+  {
+    "gl_name": "Jedi Master Kenobi",
+    "requirements": [
+      {"unit_name": "General Kenobi", "required_relic": 8},
+      {"unit_name": "Grand Master Yoda", "required_relic": 8},
+      {"unit_name": "Wat Tambor", "required_relic": 7},
+      {"unit_name": "Qui-Gon Jinn", "required_relic": 7},
+      {"unit_name": "Shaak Ti", "required_relic": 7},
+      {"unit_name": "General Grievous", "required_relic": 7},
+      {"unit_name": "Ahsoka Tano", "required_relic": 5},
+      {"unit_name": "Bo-Katan Kryze", "required_relic": 5},
+      {"unit_name": "Cad Bane", "required_relic": 5},
+      {"unit_name": "Clone Sergeant - Phase I", "required_relic": 5},
+      {"unit_name": "Mace Windu", "required_relic": 3},
+      {"unit_name": "Negotiator", "required_stars": 5}
+    ]
+  },
+  {
+    "gl_name": "Lord Vader",
+    "requirements": [
+      {"unit_name": "General Anakin Skywalker", "required_relic": 8},
+      {"unit_name": "Padme Amidala", "required_relic": 8},
+      {"unit_name": "Admiral Piett", "required_relic": 8},
+      {"unit_name": "ARC Trooper", "required_relic": 8},
+      {"unit_name": "Echo", "required_relic": 7},
+      {"unit_name": "Tech", "required_relic": 7},
+      {"unit_name": "Darth Vader", "required_relic": 7},
+      {"unit_name": "Emperor Palpatine", "required_relic": 7},
+      {"unit_name": "Count Dooku", "required_relic": 6},
+      {"unit_name": "Hunter", "required_relic": 5},
+      {"unit_name": "Nute Gunray", "required_relic": 5},
+      {"unit_name": "Tusken Raider", "required_relic": 5},
+      {"unit_name": "Zam Wesell", "required_relic": 5}
+    ]
+  },
+  {
+    "gl_name": "Jabba the Hutt",
+    "requirements": [
+      {"unit_name": "Jedi Knight Luke Skywalker", "required_relic": 7},
+      {"unit_name": "Boushh (Leia Organa)", "required_relic": 7},
+      {"unit_name": "Skiff Guard (Lando Calrissian)", "required_relic": 7},
+      {"unit_name": "Krrsantan", "required_relic": 7},
+      {"unit_name": "Boba Fett", "required_relic": 8},
+      {"unit_name": "Han Solo", "required_relic": 8},
+      {"unit_name": "C-3PO", "required_relic": 7},
+      {"unit_name": "Greedo", "required_relic": 6},
+      {"unit_name": "Ugnaught", "required_relic": 5},
+      {"unit_name": "Embo", "required_relic": 5},
+      {"unit_name": "Aurra Sing", "required_relic": 3},
+      {"unit_name": "Jawa", "required_relic": 3}
+    ]
+  },
+  {
+    "gl_name": "Leia Organa",
+    "requirements": [
+      {"unit_name": "Captain Rex", "required_relic": 7},
+      {"unit_name": "Princess Kneesaa", "required_relic": 7},
+      {"unit_name": "Captain Drogan", "required_relic": 7},
+      {"unit_name": "Scout Trooper", "required_relic": 7},
+      {"unit_name": "R2-D2", "required_relic": 8},
+      {"unit_name": "Admiral Raddus", "required_relic": 8},
+      {"unit_name": "Mon Mothma", "required_relic": 5},
+      {"unit_name": "Boushh (Leia Organa)", "required_relic": 5},
+      {"unit_name": "Wicket", "required_relic": 3},
+      {"unit_name": "Ewok Elder", "required_relic": 3}
+    ]
+  }
+]

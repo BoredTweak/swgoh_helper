@@ -151,6 +151,25 @@ uv run rote-farm 123-456-789 --max-recommendations 10
 uv run rote-farm 123-456-789 --include-unowned
 ```
 
+### Galactic Legend Path Advisor
+
+Rank the best Galactic Legend unlock paths for your roster:
+
+```powershell
+uv run gl-path <ally_code>
+```
+
+Options:
+```powershell
+uv run gl-path 123-456-789 --top 5
+uv run gl-path 123-456-789 --target "Jedi Master Kenobi"
+uv run gl-path 123-456-789 --owned-only
+```
+
+Notes:
+- GL requirements are loaded from `data/gl_requirements.json`.
+- Update that file any time requirements change in-game.
+
 ## Discord Bot
 
 The project includes an optional Discord bot that exposes all commands as slash commands.
