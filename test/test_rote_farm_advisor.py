@@ -494,6 +494,83 @@ class TestFarmAdvisor:
         assert thrawn.slots_needed == 5
         assert thrawn.slots_unfillable == 1
 
+    def test_true_gap_scope_excludes_locked_bonus_planet_gaps(self):
+        requirements = SimpleRoteRequirements(
+            version="1.0",
+            last_updated="2026-01-01",
+            requirements=[
+                UnitRequirement(
+                    unit_id="DARKTROOPER",
+                    unit_name="Dark Trooper",
+                    min_relic=7,
+                    path=RotePath.DARK_SIDE,
+                    territory="Mustafar",
+                    count=2,
+                ),
+                UnitRequirement(
+                    unit_id="CEREJUNDA",
+                    unit_name="Cere Junda",
+                    min_relic=7,
+                    path=RotePath.LIGHT_SIDE,
+                    territory="Zeffo",
+                    count=2,
+                ),
+                UnitRequirement(
+                    unit_id="MANDALORBOKATAN",
+                    unit_name="Bo-Katan (Mand'alor)",
+                    min_relic=7,
+                    path=RotePath.NEUTRAL,
+                    territory="Mandalore",
+                    count=2,
+                ),
+            ],
+        )
+        matrix = CoverageMatrix(guild_name="Test", guild_id="g1", member_count=50)
+        advisor = FarmAdvisor(matrix, requirements)
+
+        scoped_requirements, unit_gaps, locked_targets, _ = advisor.get_true_gap_scope()
+
+        territories = {req.territory for req in scoped_requirements.requirements}
+        assert territories == {"Mustafar"}
+        assert ("DARKTROOPER", 7) in unit_gaps
+        assert ("CEREJUNDA", 7) not in unit_gaps
+        assert ("MANDALORBOKATAN", 7) not in unit_gaps
+        assert set(locked_targets) == {"Zeffo", "Mandalore"}
+
+    def test_true_gap_scope_limits_locked_bonus_targets_by_max_phase(self):
+        requirements = SimpleRoteRequirements(
+            version="1.0",
+            last_updated="2026-01-01",
+            requirements=[
+                UnitRequirement(
+                    unit_id="CEREJUNDA",
+                    unit_name="Cere Junda",
+                    min_relic=7,
+                    path=RotePath.LIGHT_SIDE,
+                    territory="Zeffo",
+                    count=2,
+                ),
+                UnitRequirement(
+                    unit_id="MANDALORBOKATAN",
+                    unit_name="Bo-Katan (Mand'alor)",
+                    min_relic=7,
+                    path=RotePath.NEUTRAL,
+                    territory="Mandalore",
+                    count=2,
+                ),
+            ],
+        )
+        matrix = CoverageMatrix(guild_name="Test", guild_id="g1", member_count=50)
+        advisor = FarmAdvisor(matrix, requirements)
+
+        scoped_requirements, unit_gaps, locked_targets, _ = advisor.get_true_gap_scope(
+            max_phase="3"
+        )
+
+        assert not scoped_requirements.requirements
+        assert not unit_gaps
+        assert set(locked_targets) == {"Zeffo"}
+
     def test_aggregates_multi_territory_shortage_for_same_relic_tier(self):
         requirements = SimpleRoteRequirements(
             version="1.0",

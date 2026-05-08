@@ -15,7 +15,6 @@ from swgoh_discord.utils import (
     split_message,
 )
 
-
 DISCORD_ROTE_OUTPUT_FORMATS = tuple(
     output_format
     for output_format in VALID_ROTE_OUTPUT_FORMATS
@@ -37,6 +36,7 @@ class RoteCog(commands.Cog):
         max_phase="Limit analysis to phases up to N (e.g. 4, 3b, 5)",
         refresh="Force fresh data from API (ignore cache)",
         output_format="Output format: all, coverage, gaps, owners, mine",
+        buffer="Include units within N extra owners in Gaps",
         verbose="Show all owners for each requirement (owners format)",
         ignored_players="Comma-separated list of player names to exclude",
     )
@@ -47,6 +47,7 @@ class RoteCog(commands.Cog):
         max_phase: Optional[str] = None,
         refresh: bool = False,
         output_format: Optional[str] = "gaps",
+        buffer: Optional[int] = None,
         verbose: bool = False,
         ignored_players: Optional[str] = None,
     ):
@@ -57,6 +58,7 @@ class RoteCog(commands.Cog):
             max_phase=max_phase,
             refresh=refresh,
             output_format=output_format,
+            buffer=buffer,
             verbose=verbose,
             ignored_players=ignored_players,
         )
@@ -69,6 +71,13 @@ class RoteCog(commands.Cog):
                     interaction,
                     "Invalid output format. "
                     f"Expected one of: {', '.join(DISCORD_ROTE_OUTPUT_FORMATS)}",
+                )
+                return
+
+            if buffer is not None and buffer < 0:
+                await safe_followup_send(
+                    interaction,
+                    "Invalid buffer. Value must be >= 0.",
                 )
                 return
 
@@ -87,6 +96,7 @@ class RoteCog(commands.Cog):
                 max_phase=max_phase,
                 refresh=refresh,
                 output_format=output_format,
+                limited_buffer=buffer,
                 verbose=verbose,
                 ignored_players=parsed_ignored,
                 progress=notifier,

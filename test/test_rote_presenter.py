@@ -2,8 +2,10 @@
 
 from swgoh_helper.models import CombatType
 from swgoh_helper.models.rote import (
+    BonusZoneReadiness,
     CoverageMatrix,
     PlayerUnitInfo,
+    PlayerDistance,
     RotePath,
     SimpleRoteRequirements,
     UnitType,
@@ -392,6 +394,119 @@ def test_output_format_gaps_includes_noncritical_unfillable_gaps():
 
     assert "P3 Dathomir:" in output
     assert "- Mother Talzin R7: 4/5 (Alpha, Beta, Gamma, Delta)" in output
+
+
+def test_output_format_gaps_with_buffer_merges_limited_units():
+    """Buffered gaps mode should include exactly-filled limited requirements."""
+    requirements = SimpleRoteRequirements(
+        last_updated="2026-04-01",
+        requirements=[
+            UnitRequirement(
+                unit_id="GAR",
+                unit_name="Gar Saxon",
+                min_relic=7,
+                path=RotePath.DARK_SIDE,
+                territory="Dathomir",
+                count=1,
+            )
+        ],
+    )
+    matrix = CoverageMatrix(
+        guild_name="Test Guild",
+        guild_id="guild-1",
+        member_count=1,
+        units={
+            "GAR": UnitCoverage(
+                unit_id="GAR",
+                unit_name="Gar Saxon",
+                alignment=2,
+                combat_type=CombatType.CHARACTER,
+                players_by_relic={
+                    7: [
+                        PlayerUnitInfo(
+                            player_name="Murphyslaw",
+                            ally_code=111111111,
+                            relic_tier=7,
+                        )
+                    ]
+                },
+            )
+        },
+    )
+    analyzer = CoverageAnalyzer(matrix, requirements)
+    gap_analyzer = GapAnalyzer(matrix, requirements)
+    bottleneck_analyzer = BottleneckAnalyzer(matrix, requirements)
+
+    output = RotePresenter().format_results(
+        analyzer,
+        matrix,
+        gap_analyzer,
+        bottleneck_analyzer,
+        output_format="gaps",
+        limited_buffer=0,
+    )
+
+    assert "P3 Dathomir:" in output
+    assert "- Gar Saxon R7: 1/1 (Murphyslaw)" in output
+    assert "**Limited Availability**" not in output
+
+
+def test_output_format_gaps_with_buffer_includes_locked_bonus_status_lines():
+    """Buffered gaps mode should include locked bonus territory status even without gap rows."""
+    requirements = SimpleRoteRequirements(
+        last_updated="2026-04-01",
+        requirements=[
+            UnitRequirement(
+                unit_id="CEREJUNDA",
+                unit_name="Cere Junda",
+                min_relic=7,
+                path=RotePath.LIGHT_SIDE,
+                territory="Zeffo",
+                count=1,
+            )
+        ],
+    )
+    matrix = CoverageMatrix(
+        guild_name="Test Guild",
+        guild_id="guild-1",
+        member_count=10,
+    )
+    analyzer = CoverageAnalyzer(matrix, requirements)
+    gap_analyzer = GapAnalyzer(matrix, requirements)
+    bottleneck_analyzer = BottleneckAnalyzer(matrix, requirements)
+    bonus_readiness = {
+        "Zeffo": BonusZoneReadiness(
+            zone_name="Zeffo",
+            threshold=30,
+            qualifying_players=[],
+            qualifying_count=11,
+            near_qualifying=[
+                PlayerDistance(
+                    player_name="Alpha",
+                    distance=1.0,
+                    details="Cere R6->R7",
+                )
+            ],
+            distance_to_fill_gap=25.0,
+            farmable_count=11,
+            is_unlockable=False,
+        )
+    }
+
+    output = RotePresenter().format_results(
+        analyzer,
+        matrix,
+        gap_analyzer,
+        bottleneck_analyzer,
+        output_format="gaps",
+        limited_buffer=0,
+        bonus_readiness=bonus_readiness,
+    )
+
+    assert (
+        "P3b Zeffo 🔒 (11/30 ready) - Requires R7 Cere and R7 Cal "
+        "(your choice, easier with JKCS)" in output
+    )
 
 
 def test_output_format_mine_groups_requester_coverage_by_territory():

@@ -25,11 +25,13 @@ from .models.rote import (
     PlatoonGap,
     SimpleRoteRequirements,
 )
+from .rote_coverage import RoteConfig, filter_requirements_by_phase
 from .rote_gap_analyzer import AggregatedGap, GapAnalyzer, UnitGapKey
 from .rote_limited_availability_service import LimitedAvailabilityService
 from .rote_proximity_analyzer import ProximityAnalyzer
 
 BonusUnlockContext = Dict[str, Tuple[bool, int, int]]
+BonusUnlockTargets = Dict[str, List[Tuple[str, str]]]
 RequiredTarget = Tuple[str, List[str], int]
 RequiredTargetMap = Dict[UnitGapKey, RequiredTarget]
 
@@ -85,12 +87,6 @@ class FarmAdvisor:
     ):
         self.matrix = coverage_matrix
         self.requirements = requirements
-        self.gap_analyzer = GapAnalyzer(coverage_matrix, requirements)
-        self.limited_availability_service = LimitedAvailabilityService(
-            coverage_matrix,
-            requirements,
-            base_owner_threshold=LIMITED_AVAILABILITY_BASE_THRESHOLD,
-        )
         self.proximity_analyzer = proximity_analyzer or ProximityAnalyzer(
             coverage_matrix, requirements
         )
@@ -100,6 +96,7 @@ class FarmAdvisor:
         player_roster: PlayerResponse,
         max_recommendations: int = 20,
         include_unowned: bool = True,
+        max_phase: str | None = None,
     ) -> PersonalFarmReport:
         """
         Generate personalized farm recommendations for a player.
@@ -113,9 +110,18 @@ class FarmAdvisor:
             PersonalFarmReport with prioritized recommendations
         """
         player_units = self._build_player_unit_lookup(player_roster)
-        required_targets = self._required_target_details()
-        unit_gaps = self.gap_analyzer.get_gaps_by_unit()
-        bonus_unlock = self._build_bonus_unlock_context()
+        (
+            scoped_requirements,
+            unit_gaps,
+            locked_bonus_targets,
+            bonus_unlock,
+        ) = self.get_true_gap_scope(max_phase=max_phase)
+        required_targets = self._required_target_details(scoped_requirements)
+        limited_service = LimitedAvailabilityService(
+            self.matrix,
+            scoped_requirements,
+            base_owner_threshold=LIMITED_AVAILABILITY_BASE_THRESHOLD,
+        )
 
         recommendations = []
         already_qualified = self._collect_already_qualified(
@@ -138,12 +144,14 @@ class FarmAdvisor:
                 player_units=player_units,
                 include_unowned=include_unowned,
                 bonus_unlock=bonus_unlock,
+                locked_bonus_targets=locked_bonus_targets,
             )
         )
         recommendations.extend(
             self._build_limited_availability_recommendations(
                 player_units=player_units,
                 include_unowned=include_unowned,
+                limited_service=limited_service,
             )
         )
         recommendations = self._dedupe_recommendations(recommendations)
@@ -163,6 +171,97 @@ class FarmAdvisor:
             recommendations=recommendations,
             already_qualified=already_qualified,
         )
+
+    def get_true_gap_scope(
+        self,
+        max_phase: str | None = None,
+    ) -> tuple[
+        SimpleRoteRequirements,
+        Dict[UnitGapKey, AggregatedGap],
+        BonusUnlockTargets,
+        BonusUnlockContext,
+    ]:
+        """Return lock-aware gap scope and unlock targets for bonus planets."""
+        scoped_requirements = self._requirements_up_to_phase(max_phase)
+        bonus_unlock = self._build_bonus_unlock_context()
+        bonus_zones_in_scope = self._bonus_zones_up_to_phase(max_phase)
+        unlocked_requirements, locked_bonus_zones = self._true_gap_requirements(
+            scoped_requirements,
+            bonus_unlock,
+            bonus_zones_in_scope,
+        )
+        gap_analyzer = GapAnalyzer(self.matrix, unlocked_requirements)
+        locked_bonus_targets: BonusUnlockTargets = {
+            zone_name: self.BONUS_UNLOCK_TARGETS[zone_name]
+            for zone_name in sorted(locked_bonus_zones)
+        }
+        return (
+            unlocked_requirements,
+            gap_analyzer.get_gaps_by_unit(),
+            locked_bonus_targets,
+            bonus_unlock,
+        )
+
+    def _requirements_up_to_phase(
+        self,
+        max_phase: str | None,
+    ) -> SimpleRoteRequirements:
+        if max_phase is None:
+            return self.requirements
+        return filter_requirements_by_phase(self.requirements, max_phase)
+
+    def _true_gap_requirements(
+        self,
+        scoped_requirements: SimpleRoteRequirements,
+        bonus_unlock: BonusUnlockContext,
+        bonus_zones_in_scope: set[str],
+    ) -> tuple[SimpleRoteRequirements, set[str]]:
+        locked_bonus_zones = {
+            zone_name
+            for zone_name in bonus_zones_in_scope
+            if not bonus_unlock.get(zone_name, (True, 0, 0))[0]
+        }
+        if not locked_bonus_zones:
+            return scoped_requirements, set()
+
+        filtered_requirements = [
+            requirement
+            for requirement in scoped_requirements.requirements
+            if requirement.territory not in locked_bonus_zones
+        ]
+        filtered_territories = [
+            territory
+            for territory in scoped_requirements.territories
+            if territory.territory not in locked_bonus_zones
+        ]
+        return (
+            scoped_requirements.model_copy(
+                update={
+                    "requirements": filtered_requirements,
+                    "territories": filtered_territories,
+                }
+            ),
+            locked_bonus_zones,
+        )
+
+    def _bonus_zones_up_to_phase(self, max_phase: str | None) -> set[str]:
+        if max_phase is None:
+            return set(self.BONUS_UNLOCK_TARGETS)
+
+        phase_token = max_phase.rstrip("b")
+        if not phase_token.isdigit():
+            return set(self.BONUS_UNLOCK_TARGETS)
+
+        max_phase_number = int(phase_token)
+        zones = set()
+        for zone_name in self.BONUS_UNLOCK_TARGETS:
+            zone_phase = RoteConfig.TERRITORY_PHASE.get(zone_name)
+            if not zone_phase:
+                continue
+            zone_phase_number = int(zone_phase.rstrip("b"))
+            if zone_phase_number <= max_phase_number:
+                zones.add(zone_name)
+        return zones
 
     def _build_bonus_unlock_context(self) -> BonusUnlockContext:
         zeffo_ready = self._players_ready_zeffo()
@@ -195,11 +294,14 @@ class FarmAdvisor:
             for player in self.matrix.get_players_at_relic(unit_id, min_relic)
         }
 
-    def _required_target_details(self) -> RequiredTargetMap:
+    def _required_target_details(
+        self,
+        requirements: SimpleRoteRequirements,
+    ) -> RequiredTargetMap:
         target_names: Dict[UnitGapKey, str] = {}
         target_territories: Dict[UnitGapKey, set[str]] = defaultdict(set)
         target_slots: Dict[UnitGapKey, int] = defaultdict(int)
-        for requirement in self.requirements.requirements:
+        for requirement in requirements.requirements:
             key = (requirement.unit_id, requirement.min_relic)
             if key not in target_names:
                 target_names[key] = requirement.unit_name
@@ -233,6 +335,7 @@ class FarmAdvisor:
         self,
         player_units: Dict[str, UnitData],
         include_unowned: bool,
+        limited_service: LimitedAvailabilityService,
     ) -> List[PersonalFarmRecommendation]:
         recommendations = []
         for (
@@ -244,7 +347,7 @@ class FarmAdvisor:
             _,
             guild_owners,
             limited_threshold,
-        ) in self.limited_availability_service.get_targets(include_zero_owners=False):
+        ) in limited_service.get_targets(include_zero_owners=False):
             recommendation = self._build_limited_target_recommendation(
                 unit_id=unit_id,
                 unit_name=unit_name,
@@ -395,9 +498,10 @@ class FarmAdvisor:
         player_units: Dict[str, UnitData],
         include_unowned: bool,
         bonus_unlock: BonusUnlockContext,
+        locked_bonus_targets: BonusUnlockTargets,
     ) -> List[PersonalFarmRecommendation]:
         recommendations = []
-        for zone_name, targets in self.BONUS_UNLOCK_TARGETS.items():
+        for zone_name, targets in locked_bonus_targets.items():
             unlockable, qualifying_count, threshold = bonus_unlock[zone_name]
             if unlockable:
                 continue

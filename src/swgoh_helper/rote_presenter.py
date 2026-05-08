@@ -16,6 +16,11 @@ from .rote_models import RotePath
 class RotePresenter:
     """Formats ROTE platoon analysis as markdown for Discord sharing."""
 
+    LOCKED_BONUS_REQUIREMENTS = {
+        "Mandalore": "Requires BKM R7",
+        "Zeffo": "Requires R7 Cere and R7 Cal (your choice, easier with JKCS)",
+    }
+
     def format_results(
         self,
         analyzer: CoverageAnalyzer,
@@ -24,6 +29,7 @@ class RotePresenter:
         bottleneck_analyzer: BottleneckAnalyzer,
         output_format: str = "all",
         limited_output_format: str = "member",
+        limited_buffer: int | None = None,
         verbose: bool = False,
         requester_ally_code: int | None = None,
         bonus_readiness: Optional[Dict[str, BonusZoneReadiness]] = None,
@@ -37,7 +43,12 @@ class RotePresenter:
 
         if output_format in {"all", "gaps"}:
             lines.extend(
-                self._format_gaps(gap_analyzer, bottleneck_analyzer, bonus_readiness)
+                self._format_gaps(
+                    gap_analyzer,
+                    bottleneck_analyzer,
+                    bonus_readiness,
+                    limited_buffer,
+                )
             )
 
         if output_format == "owners":
@@ -122,7 +133,9 @@ class RotePresenter:
 
         for relic_tier in sorted(grouped):
             lines.append(f"R{relic_tier}:")
-            rows = sorted(grouped[relic_tier], key=lambda row: (row[1], -row[2], row[0]))
+            rows = sorted(
+                grouped[relic_tier], key=lambda row: (row[1], -row[2], row[0])
+            )
             for unit_name, owner_count, slots_needed in rows:
                 owner_word = "owner" if owner_count == 1 else "owners"
                 lines.append(
@@ -349,32 +362,57 @@ class RotePresenter:
         gap_analyzer: GapAnalyzer,
         bottleneck_analyzer: BottleneckAnalyzer,
         bonus_readiness: Optional[Dict[str, BonusZoneReadiness]] = None,
+        limited_buffer: int | None = None,
     ) -> list[str]:
         """Format all unfillable gaps and limited availability units."""
         lines = ["", "**Gaps**"]
 
-        all_gaps = gap_analyzer.get_all_gaps()
-        if not all_gaps:
+        all_requirements = gap_analyzer.analyze_all_requirements()
+        gap_rows = self._select_gap_rows(all_requirements, limited_buffer)
+        territories = self._territories_for_gap_rows(
+            gap_analyzer,
+            gap_rows,
+            bonus_readiness,
+            limited_buffer,
+        )
+
+        if not gap_rows and not territories:
             lines.append("✅ No gaps")
         else:
             gaps_by_territory = defaultdict(list)
-            for gap in all_gaps:
+            for gap in gap_rows:
                 gaps_by_territory[(gap.path, gap.territory)].append(gap)
 
-            for (path, territory), gaps in sorted(
-                gaps_by_territory.items(),
+            for path, territory in sorted(
+                territories,
                 key=lambda x: (
-                    x[0][0].value,
-                    RoteConfig.TERRITORY_PHASE.get(x[0][1], "99"),
+                    x[0].value,
+                    RoteConfig.TERRITORY_PHASE.get(x[1], "99"),
+                    x[1],
                 ),
             ):
+                gaps = gaps_by_territory.get((path, territory), [])
+                readiness = (
+                    bonus_readiness.get(territory)
+                    if bonus_readiness and territory in bonus_readiness
+                    else None
+                )
+                if (
+                    limited_buffer is not None
+                    and readiness
+                    and not readiness.is_unlockable
+                ):
+                    lines.append(
+                        self._format_locked_bonus_gap_line(territory, readiness)
+                    )
+                    lines.append("")
+                    continue
+
                 phase = RoteConfig.TERRITORY_PHASE.get(territory, "?")
                 lines.append(f"P{phase} {territory}:")
 
-                if bonus_readiness and territory in bonus_readiness:
-                    lines.extend(
-                        self._format_bonus_zone_status(bonus_readiness[territory])
-                    )
+                if readiness:
+                    lines.extend(self._format_bonus_zone_status(readiness))
 
                 for gap in sorted(
                     gaps, key=lambda g: (g.players_available, g.unit_name)
@@ -387,6 +425,9 @@ class RotePresenter:
                         f"{gap.players_available}/{gap.slots_needed}{owners}"
                     )
                 lines.append("")
+
+        if limited_buffer is not None:
+            return lines
 
         # Limited availability (unicorn) units
         rare_units = [
@@ -402,6 +443,59 @@ class RotePresenter:
                 )
 
         return lines
+
+    def _format_locked_bonus_gap_line(
+        self,
+        territory: str,
+        readiness: BonusZoneReadiness,
+    ) -> str:
+        """Format locked bonus territory line for compact Gaps output."""
+        phase = RoteConfig.TERRITORY_PHASE.get(territory, "?")
+        requirement_text = self.LOCKED_BONUS_REQUIREMENTS.get(territory)
+        suffix = f" - {requirement_text}" if requirement_text else ""
+        return (
+            f"P{phase} {territory} 🔒 "
+            f"({readiness.qualifying_count}/{readiness.threshold} ready){suffix}"
+        )
+
+    def _select_gap_rows(self, all_rows: list, buffer: int | None) -> list:
+        """Select rows for the Gaps section using optional limited-availability buffer."""
+        if buffer is None:
+            return [row for row in all_rows if row.is_gap]
+        return [
+            row
+            for row in all_rows
+            if row.players_available <= (row.slots_needed + buffer)
+        ]
+
+    def _territories_for_gap_rows(
+        self,
+        gap_analyzer: GapAnalyzer,
+        gap_rows: list,
+        bonus_readiness: Optional[Dict[str, BonusZoneReadiness]],
+        limited_buffer: int | None,
+    ) -> list[tuple[RotePath, str]]:
+        """Get territories to render, including locked bonus territories in buffered mode."""
+        territory_keys: set[tuple[RotePath, str]] = {
+            (row.path, row.territory) for row in gap_rows
+        }
+
+        if limited_buffer is None or not bonus_readiness:
+            return list(territory_keys)
+
+        path_by_territory = {
+            requirement.territory: requirement.path
+            for requirement in gap_analyzer.requirements.requirements
+        }
+        for territory, readiness in bonus_readiness.items():
+            if readiness.is_unlockable:
+                continue
+            path = path_by_territory.get(territory)
+            if path is None:
+                continue
+            territory_keys.add((path, territory))
+
+        return list(territory_keys)
 
     def _format_bonus_zone_status(self, readiness: BonusZoneReadiness) -> list[str]:
         """Format bonus zone unlock status as indented lines."""

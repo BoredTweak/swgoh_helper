@@ -27,7 +27,6 @@ from .rote_presenter import RotePresenter
 from .rote_bonus_readiness import BonusReadinessAnalyzer, BonusReadinessApp
 from .exceptions import AppExecutionError
 
-
 dotenv.load_dotenv()
 
 SWGOH_API_KEY = os.getenv("SWGOH_API_KEY")
@@ -260,6 +259,7 @@ class RotePlatoonApp:
         max_phase: Optional[str] = None,
         refresh: bool = False,
         output_format: str = "gaps",
+        limited_buffer: int | None = None,
         limited_output_format: str = "member",
         verbose: bool = False,
         ignored_players: Optional[list[str]] = None,
@@ -280,6 +280,9 @@ class RotePlatoonApp:
                     "Invalid --output-format for rote-limited. "
                     "Expected one of: member, relic"
                 )
+
+            if limited_buffer is not None and limited_buffer < 0:
+                raise ValueError("Invalid --buffer. Value must be >= 0.")
 
             guild_id, guild_name, member_ally_codes = (
                 self.service.get_guild_from_ally_code(ally_code)
@@ -358,6 +361,7 @@ class RotePlatoonApp:
                 gap_analyzer,
                 bottleneck_analyzer,
                 output_format=output_format,
+                limited_buffer=limited_buffer,
                 limited_output_format=limited_output_format,
                 verbose=verbose,
                 requester_ally_code=requester_ally_code,
@@ -450,6 +454,7 @@ class RoteFarmAdvisorApp:
                 target_roster,
                 max_recommendations=max_recommendations,
                 include_unowned=include_unowned,
+                max_phase=max_phase,
             )
             report.max_phase = max_phase
 
@@ -477,7 +482,7 @@ def print_usage():
         "                            --verbose: Show all matching characters (default top 10)"
     )
     print(
-        "  rote_platoon <ally_code> [--max-phase N] [--refresh] [--output-format FORMAT] [--ignore-players PLAYER1,PLAYER2,...]"
+        "  rote_platoon <ally_code> [--max-phase N] [--refresh] [--output-format FORMAT] [--buffer N] [--ignore-players PLAYER1,PLAYER2,...]"
     )
     print("                            Analyze guild for RotE platoon requirements")
     print("                            --max-phase: Limit analysis to phases up to N")
@@ -486,6 +491,9 @@ def print_usage():
         "                            --output-format: all|coverage|gaps|owners|mine|limited"
     )
     print("                                             (default: gaps)")
+    print(
+        "                            --buffer: include units within N extra owners in Gaps"
+    )
     print(
         "                            --refresh:   Force fresh data from API (ignore cache)"
     )
@@ -496,9 +504,7 @@ def print_usage():
     print(
         "  rote_limited <ally_code> [--max-phase N] [--refresh] [--output-format member|relic] [--ignore-players PLAYER1,PLAYER2,...]"
     )
-    print(
-        "                            member: per-member limited-character counts"
-    )
+    print("                            member: per-member limited-character counts")
     print(
         "                            relic: all required characters grouped by required relic and owners"
     )
@@ -620,6 +626,7 @@ def _kyrotech_cli(
     type=click.Choice(sorted(VALID_ROTE_OUTPUT_FORMATS), case_sensitive=False),
     default="gaps",
 )
+@click.option("--buffer", "limited_buffer", type=int)
 @click.option("--verbose", is_flag=True, default=False)
 @click.option("--ignore-players", "--ignored-players", "ignored_values", multiple=True)
 @click.option(
@@ -640,6 +647,7 @@ def _rote_platoon_cli(
     max_phase: str | None,
     refresh: bool,
     output_format: str,
+    limited_buffer: int | None,
     verbose: bool,
     ignored_values: tuple[str, ...],
 ) -> None:
@@ -656,6 +664,7 @@ def _rote_platoon_cli(
             max_phase=max_phase,
             refresh=refresh,
             output_format=output_format.lower(),
+            limited_buffer=limited_buffer,
             verbose=verbose,
             ignored_players=ignored_players,
         )
