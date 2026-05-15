@@ -63,6 +63,7 @@ uv run rote-platoon 123-456-789 --output-format gaps
 uv run rote-platoon 123-456-789 --output-format coverage
 uv run rote-platoon 123-456-789 --output-format owners
 uv run rote-platoon 123-456-789 --output-format mine
+uv run rote-platoon 123-456-789 --output-format planets --planets DS1,N1,LS1
 uv run rote-platoon 123-456-789 --output-format limited
 uv run rote-platoon 123-456-789 --output-format all
 ```
@@ -84,11 +85,13 @@ Valid phases: `1`, `2`, `3`, `3b`, `4`, `4b`, `5`, `5b`, `6`
 - `coverage`: territory coverage summary
 - `owners`: qualifying owners for each requirement, grouped by territory
 - `mine`: planet-centric list of requirements you can cover, with limited-availability callouts
+- `planets`: aggregate required units across selected planet IDs, showing `need` vs `guild has` at required tier
 - `limited`: per-member count of unique limited-availability character requirements
 - `all`: coverage + gaps
 
 **Optional flags:**
 - `--ignore-players` excludes players from analysis by name or ally code (supports `123456789` or `123-456-789`)
+- `--planets` filters by up to 3 identifiers like `DS1`, `LS1`, `N1`
 
 Farming recommendations have moved to `rote-farm`.
 
@@ -151,23 +154,23 @@ uv run rote-farm 123-456-789 --max-recommendations 10
 uv run rote-farm 123-456-789 --include-unowned
 ```
 
-### Galactic Legend Path Advisor
+### Journey Guide Path Advisor
 
-Rank the best Galactic Legend unlock paths for your roster:
+Rank the best Journey Guide unlock paths for your roster:
 
 ```powershell
-uv run gl-path <ally_code>
+uv run journey-guide <ally_code>
 ```
 
 Options:
 ```powershell
-uv run gl-path 123-456-789 --top 5
-uv run gl-path 123-456-789 --target "Jedi Master Kenobi"
-uv run gl-path 123-456-789 --owned-only
+uv run journey-guide 123-456-789 --top 5
+uv run journey-guide 123-456-789 --target "Jedi Master Kenobi"
+uv run journey-guide 123-456-789 --owned-only
 ```
 
 Notes:
-- GL requirements are loaded from `data/gl_requirements.json`.
+- Journey Guide requirements are loaded from `data/journey_guide_requirements.json`.
 - Update that file any time requirements change in-game.
 
 ## Discord Bot

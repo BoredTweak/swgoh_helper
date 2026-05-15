@@ -932,3 +932,97 @@ def test_output_format_mine_uses_unique_character_requirements_per_planet():
     )
 
     assert "You own **2/2** at the required levels." in output
+
+
+def test_output_format_planets_lists_unit_counts_by_planet():
+    """Planets view should show per-planet unit totals."""
+    requirements = SimpleRoteRequirements(
+        last_updated="2026-04-01",
+        requirements=[
+            UnitRequirement(
+                unit_id="JEDIKNIGHTREVAN",
+                unit_name="Jedi Knight Revan",
+                min_relic=5,
+                path=RotePath.DARK_SIDE,
+                territory="Mustafar",
+                count=2,
+            ),
+            UnitRequirement(
+                unit_id="JEDIKNIGHTREVAN",
+                unit_name="Jedi Knight Revan",
+                min_relic=5,
+                path=RotePath.LIGHT_SIDE,
+                territory="Coruscant",
+                count=1,
+            ),
+            UnitRequirement(
+                unit_id="CAPITALCHIMAERA",
+                unit_name="Chimaera",
+                min_relic=7,
+                path=RotePath.DARK_SIDE,
+                territory="Mustafar",
+                count=1,
+                unit_type=UnitType.SHIP,
+            ),
+        ],
+    )
+    matrix = CoverageMatrix(
+        guild_name="Test Guild",
+        guild_id="guild-1",
+        member_count=3,
+        units={
+            "JEDIKNIGHTREVAN": UnitCoverage(
+                unit_id="JEDIKNIGHTREVAN",
+                unit_name="Jedi Knight Revan",
+                alignment=2,
+                combat_type=CombatType.CHARACTER,
+                players_by_relic={
+                    5: [
+                        PlayerUnitInfo(
+                            player_name="Alpha",
+                            ally_code=111111111,
+                            relic_tier=5,
+                        ),
+                        PlayerUnitInfo(
+                            player_name="Beta",
+                            ally_code=222222222,
+                            relic_tier=6,
+                        ),
+                    ]
+                },
+            ),
+            "CAPITALCHIMAERA": UnitCoverage(
+                unit_id="CAPITALCHIMAERA",
+                unit_name="Chimaera",
+                alignment=2,
+                combat_type=CombatType.SHIP,
+                players_by_relic={
+                    7: [
+                        PlayerUnitInfo(
+                            player_name="Alpha",
+                            ally_code=111111111,
+                            relic_tier=7,
+                        )
+                    ]
+                },
+            ),
+        },
+    )
+    analyzer = CoverageAnalyzer(matrix, requirements)
+    gap_analyzer = GapAnalyzer(matrix, requirements)
+    bottleneck_analyzer = BottleneckAnalyzer(matrix, requirements)
+
+    output = RotePresenter().format_results(
+        analyzer,
+        matrix,
+        gap_analyzer,
+        bottleneck_analyzer,
+        output_format="planets",
+    )
+
+    assert "**Planet Requirements**" in output
+    assert "P1 Mustafar:" in output
+    assert "P1 Coruscant:" in output
+    assert "- Jedi Knight Revan R5: need 2, guild has 2" in output
+    assert "- Jedi Knight Revan R5: need 1, guild has 2" in output
+    assert "- Chimaera 7*: need 1, guild has 1" in output

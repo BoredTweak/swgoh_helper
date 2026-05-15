@@ -2,6 +2,8 @@
 Constants used throughout the swgoh_helper application.
 """
 
+from .models.rote import RotePath
+
 # Kyrotech salvage IDs and display names
 KYROTECH_SALVAGE_IDS = {
     "172Salvage": "Mk 7 Kyrotech Shock Prod Prototype Salvage",
@@ -11,36 +13,12 @@ KYROTECH_SALVAGE_IDS = {
 
 MAX_GEAR_TIER = 13
 
-# Bo-Katan (Mand'alor) unlock requirements: R7 for all of these
-BOKATAN_PREREQS = {
-    "KELLERANBEQ": "Kelleran Beq",
-    "PAZVIZSLA": "Paz Vizsla",
-    "IG12": "IG-12 & Grogu",
-    "THEMANDALORIANBESKARARMOR": "The Mandalorian (Beskar Armor)",
-}
-
-# The Mandalorian (Beskar Armor) unlock requirements: 7* G12 for all of these
-BESKAR_PREREQS = {
-    "THEMANDALORIAN": "The Mandalorian",
-    "GREEFKARGA": "Greef Karga",
-    "CARADUNE": "Cara Dune",
-    "IG11": "IG-11",
-    "KUIIL": "Kuiil",
-}
-
 # Unlock thresholds
 ZEFFO_THRESHOLD = 30
 MANDALORE_THRESHOLD = 25
 
 # Minimum relic tier required (R1 = 1, R5 = 5, etc.)
 MIN_RELIC_TIER = 7  # Must have at least R7 to qualify
-
-# Beskar Mando unlock requirement
-BESKAR_MIN_GEAR = 12
-BESKAR_MIN_STARS = 7
-
-# Bo-Katan unlock requirement (all prereqs at R7)
-BOKATAN_MIN_RELIC = 7
 
 # Distance scoring weights (from farming recommendations)
 RELIC_WEIGHT = 1.0  # Each relic level
@@ -65,10 +43,17 @@ RELIC_STAR_REQUIREMENTS = {
 # Farming recommendations
 MAX_PLAYERS_PER_UNIT = 20  # Max players to show per unit in farming recommendations
 
-# Galactic Legend path planning
-GL_REQUIREMENTS_FILENAME = "gl_requirements.json"
+# Journey guide path planning
+JOURNEY_GUIDE_REQUIREMENTS_FILENAME = "journey_guide_requirements.json"
 UNOWNED_UNIT_PENALTY = 15.0
 
 # Limited-availability policy
 LIMITED_AVAILABILITY_BASE_THRESHOLD = 3
 LIMITED_AVAILABILITY_CALLOUT_THRESHOLD = 4
+
+# ROTE path display/planet prefixes
+PATH_TO_PLANET_PREFIX = {
+    RotePath.DARK_SIDE: "DS",
+    RotePath.LIGHT_SIDE: "LS",
+    RotePath.NEUTRAL: "N",
+}

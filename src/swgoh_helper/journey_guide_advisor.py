@@ -1,25 +1,37 @@
-"""Galactic Legend path analysis for individual player rosters."""
+"""Journey Guide path analysis for individual player rosters."""
 
 import json
 import re
 from pathlib import Path
+from typing import Any
 
 from .constants import (
     GEAR_WEIGHT,
-    GL_REQUIREMENTS_FILENAME,
+    JOURNEY_GUIDE_REQUIREMENTS_FILENAME,
     RELIC_STAR_REQUIREMENTS,
     RELIC_WEIGHT,
     STAR_WEIGHT,
     UNOWNED_UNIT_PENALTY,
 )
 from .models import (
-    GLPathDefinition,
-    GLPathReport,
-    GLPathScore,
-    GLRequirement,
-    GLRequirementProgress,
+    AllExprV2,
+    AnyExprV2,
+    AtLeastExprV2,
+    JourneyGuideSchemaV2,
+    JourneyPathDefinition,
+    JourneyPathReport,
+    JourneyPathScore,
+    JourneyRequirement,
+    JourneyRequirementProgress,
+    NoneExprV2,
     PlayerResponse,
+    RefExprV2,
+    RequirementExprV2,
+    SelectorExprV2,
+    SelectorRuleV2,
     Unit,
+    UnitExprV2,
+    UnitRuleV2,
     UnitsResponse,
 )
 from .progress_scorer import ProgressScorer
@@ -30,8 +42,8 @@ def _normalize_name(name: str) -> str:
     return re.sub(r"[^a-z0-9]", "", name.lower())
 
 
-class GLPathAdvisor:
-    """Ranks Galactic Legend unlock paths by roster distance."""
+class JourneyGuideAdvisor:
+    """Ranks Journey Guide unlock paths by roster distance."""
 
     def __init__(self, requirements_path: Path | None = None):
         self.requirements_path = requirements_path or self._default_requirements_path()
@@ -50,15 +62,15 @@ class GLPathAdvisor:
         target_gl: str | None = None,
         top_n: int = 3,
         include_unowned: bool = True,
-    ) -> GLPathReport:
-        """Analyze and rank Galactic Legend paths for a player."""
+    ) -> JourneyPathReport:
+        """Analyze and rank Journey Guide paths for a player."""
         unit_index = self._build_unit_index(units_data.data)
         player_units = {u.data.base_id: u.data for u in player.units}
         candidate_paths = self._filter_paths(target_gl)
         scores = [
             self._score_path(path, unit_index, player_units, include_unowned)
             for path in candidate_paths
-            if not self._player_owns_gl(path, unit_index, player_units)
+            if not self._player_owns(path, unit_index, player_units)
         ]
         ranked = sorted(
             scores,
@@ -68,30 +80,30 @@ class GLPathAdvisor:
                 s.gl_name,
             ),
         )
-        return GLPathReport(
+        return JourneyPathReport(
             player_name=player.data.name,
             ally_code=player.data.ally_code,
             ranked_paths=ranked[:top_n],
         )
 
-    def format_report(self, report: GLPathReport) -> str:
+    def format_report(self, report: JourneyPathReport) -> str:
         """Render a concise command-line report."""
         lines = [
             "",
             "=" * 72,
-            "Galactic Legend Path Advisor",
+            "Journey Guide Path Advisor",
             f"Player: {report.player_name} ({report.ally_code})",
             "=" * 72,
         ]
         if not report.ranked_paths:
-            lines.append("No paths available. Check your GL requirements data.")
+            lines.append("No paths available. Check your Journey Guide requirements data.")
             return "\n".join(lines)
 
         for idx, path in enumerate(report.ranked_paths, 1):
             lines.extend(self._format_path_block(idx, path))
         return "\n".join(lines).rstrip()
 
-    def _format_path_block(self, rank: int, path: GLPathScore) -> list[str]:
+    def _format_path_block(self, rank: int, path: JourneyPathScore) -> list[str]:
         missing_count = path.total_requirements - path.completed_requirements
         header = (
             f"\n[{rank}] {path.gl_name}  "
@@ -122,12 +134,14 @@ class GLPathAdvisor:
             lines.append(f"    {idx}. {self._format_requirement(req)}")
         return lines
 
-    def _format_completed_requirement(self, requirement: GLRequirementProgress) -> str:
+    def _format_completed_requirement(
+        self, requirement: JourneyRequirementProgress
+    ) -> str:
         target = self._format_target(requirement)
         current = self._format_current(requirement)
         return f"{requirement.unit_name}: {current} meets {target}"
 
-    def _format_requirement(self, requirement: GLRequirementProgress) -> str:
+    def _format_requirement(self, requirement: JourneyRequirementProgress) -> str:
         target = self._format_target(requirement)
         current = self._format_current(requirement)
         return (
@@ -135,14 +149,14 @@ class GLPathAdvisor:
             f"(weight {requirement.distance:.1f})"
         )
 
-    def _format_target(self, requirement: GLRequirementProgress) -> str:
+    def _format_target(self, requirement: JourneyRequirementProgress) -> str:
         if requirement.required_relic is not None:
             return f"R{requirement.required_relic}"
         if requirement.required_gear is not None:
             return f"G{requirement.required_gear}/{requirement.required_stars}*"
         return f"{requirement.required_stars}*"
 
-    def _format_current(self, requirement: GLRequirementProgress) -> str:
+    def _format_current(self, requirement: JourneyRequirementProgress) -> str:
         if not requirement.owned:
             return "unowned"
         if requirement.current_relic >= 0:
@@ -151,11 +165,11 @@ class GLPathAdvisor:
 
     def _score_path(
         self,
-        path: GLPathDefinition,
+        path: JourneyPathDefinition,
         unit_index: dict[str, Unit],
         player_units: dict[str, object],
         include_unowned: bool,
-    ) -> GLPathScore:
+    ) -> JourneyPathScore:
         progress = [
             self._score_requirement(req, unit_index, player_units, include_unowned)
             for req in path.requirements
@@ -163,8 +177,8 @@ class GLPathAdvisor:
         completed = sum(1 for p in progress if p.complete)
         distance = sum(p.distance for p in progress if not p.complete)
         missing = [p for p in progress if not p.complete]
-        return GLPathScore(
-            gl_name=path.gl_name,
+        return JourneyPathScore(
+            gl_name=path.name,
             total_requirements=len(path.requirements),
             completed_requirements=completed,
             total_distance=distance,
@@ -174,13 +188,16 @@ class GLPathAdvisor:
 
     def _score_requirement(
         self,
-        requirement: GLRequirement,
+        requirement: JourneyRequirement,
         unit_index: dict[str, Unit],
         player_units: dict[str, object],
         include_unowned: bool,
-    ) -> GLRequirementProgress:
-        unit = self._resolve_unit(requirement.unit_name, unit_index)
-        player_unit = player_units.get(unit.base_id) if unit else None
+    ) -> JourneyRequirementProgress:
+        if requirement.unit_id:
+            player_unit = player_units.get(requirement.unit_id)
+        else:
+            unit = self._resolve_unit(requirement.unit_name, unit_index)
+            player_unit = player_units.get(unit.base_id) if unit else None
         owned = player_unit is not None
         relic = getattr(player_unit, "relic_tier_or_minus_one", -1) if owned else -1
         gear = getattr(player_unit, "gear_level", 0) if owned else 0
@@ -194,7 +211,7 @@ class GLPathAdvisor:
             stars,
             include_unowned,
         )
-        return GLRequirementProgress(
+        return JourneyRequirementProgress(
             unit_name=requirement.unit_name,
             required_relic=requirement.required_relic,
             required_gear=requirement.required_gear,
@@ -209,7 +226,7 @@ class GLPathAdvisor:
 
     def _is_requirement_complete(
         self,
-        requirement: GLRequirement,
+        requirement: JourneyRequirement,
         owned: bool,
         relic: int,
         gear: int,
@@ -227,7 +244,7 @@ class GLPathAdvisor:
 
     def _requirement_distance(
         self,
-        requirement: GLRequirement,
+        requirement: JourneyRequirement,
         owned: bool,
         relic: int,
         gear: int,
@@ -256,22 +273,24 @@ class GLPathAdvisor:
         penalty = UNOWNED_UNIT_PENALTY if include_unowned else UNOWNED_UNIT_PENALTY * 4
         return base + penalty
 
-    def _player_owns_gl(
+    def _player_owns(
         self,
-        path: GLPathDefinition,
+        path: JourneyPathDefinition,
         unit_index: dict[str, Unit],
         player_units: dict[str, object],
     ) -> bool:
-        unit = self._resolve_unit(path.gl_name, unit_index)
+        if path.unit_id:
+            return path.unit_id in player_units
+        unit = self._resolve_unit(path.name, unit_index)
         if unit is None:
             return False
         return unit.base_id in player_units
 
-    def _filter_paths(self, target_gl: str | None) -> list[GLPathDefinition]:
+    def _filter_paths(self, target_gl: str | None) -> list[JourneyPathDefinition]:
         if not target_gl:
             return self.paths
         normalized = _normalize_name(target_gl)
-        matched = [p for p in self.paths if normalized in _normalize_name(p.gl_name)]
+        matched = [p for p in self.paths if normalized in _normalize_name(p.name)]
         return matched
 
     def _resolve_unit(self, unit_name: str, unit_index: dict[str, Unit]) -> Unit | None:
@@ -287,10 +306,179 @@ class GLPathAdvisor:
             index[_normalize_name(unit.name)] = unit
         return index
 
-    def _load_requirements(self, path: Path) -> list[GLPathDefinition]:
+    def _load_requirements(self, path: Path) -> list[JourneyPathDefinition]:
         with path.open("r", encoding="utf-8") as file:
-            raw_paths = json.load(file)
-        return [GLPathDefinition(**raw_path) for raw_path in raw_paths]
+            data = json.load(file)
+        return self._load_requirements_v2(data)
+
+    def _load_requirements_v2(
+        self, data: dict[str, Any]
+    ) -> list[JourneyPathDefinition]:
+        schema = JourneyGuideSchemaV2.model_validate(data)
+        paths = []
+        for target in schema.targets:
+            requirements = self._extract_v2_requirements(schema, target.requirement)
+            paths.append(
+                JourneyPathDefinition(
+                    unit_id=target.id,
+                    name=target.name,
+                    requirements=requirements,
+                )
+            )
+        return paths
+
+    def _extract_v2_requirements(
+        self,
+        schema: JourneyGuideSchemaV2,
+        expression: RequirementExprV2,
+    ) -> list[JourneyRequirement]:
+        flattened = self._flatten_v2_expression(
+            schema,
+            expression,
+            schema.defaults.stars,
+            set(),
+        )
+        return self._dedupe_requirements(flattened)
+
+    def _flatten_v2_expression(
+        self,
+        schema: JourneyGuideSchemaV2,
+        expression: RequirementExprV2,
+        default_stars: int,
+        seen_refs: set[str],
+    ) -> list[JourneyRequirement]:
+        if isinstance(expression, UnitExprV2):
+            return [
+                self._unit_rule_to_requirement(schema, expression.unit, default_stars)
+            ]
+        if isinstance(expression, SelectorExprV2):
+            return self._selector_rule_to_requirements(
+                schema, expression.selector, default_stars
+            )
+        if isinstance(expression, RefExprV2):
+            return self._resolve_ref_expression(
+                schema, expression.ref, default_stars, seen_refs
+            )
+        if isinstance(expression, AtLeastExprV2):
+            return self._flatten_expression_items(
+                schema, expression.of, default_stars, seen_refs
+            )
+        if isinstance(expression, (AllExprV2, AnyExprV2, NoneExprV2)):
+            return self._flatten_expression_items(
+                schema, expression.items, default_stars, seen_refs
+            )
+        return []
+
+    def _flatten_expression_items(
+        self,
+        schema: JourneyGuideSchemaV2,
+        items: list[RequirementExprV2],
+        default_stars: int,
+        seen_refs: set[str],
+    ) -> list[JourneyRequirement]:
+        requirements: list[JourneyRequirement] = []
+        for item in items:
+            requirements.extend(
+                self._flatten_v2_expression(schema, item, default_stars, seen_refs)
+            )
+        return requirements
+
+    def _resolve_ref_expression(
+        self,
+        schema: JourneyGuideSchemaV2,
+        ref: str,
+        default_stars: int,
+        seen_refs: set[str],
+    ) -> list[JourneyRequirement]:
+        if ref in seen_refs:
+            return []
+        ref_expression = schema.catalog.sets.get(ref)
+        if ref_expression is None:
+            return []
+        next_refs = set(seen_refs)
+        next_refs.add(ref)
+        return self._flatten_v2_expression(
+            schema,
+            ref_expression,
+            default_stars,
+            next_refs,
+        )
+
+    def _unit_rule_to_requirement(
+        self,
+        schema: JourneyGuideSchemaV2,
+        rule: UnitRuleV2,
+        default_stars: int,
+    ) -> JourneyRequirement:
+        catalog_entry = schema.catalog.units.get(rule.id)
+        min_stars = rule.min.stars if rule.min.stars is not None else default_stars
+        unit_name = catalog_entry.name if catalog_entry is not None else rule.id
+        return JourneyRequirement(
+            unit_id=rule.id,
+            unit_name=unit_name,
+            required_relic=rule.min.relic,
+            required_gear=rule.min.gear,
+            required_stars=min_stars,
+        )
+
+    def _selector_rule_to_requirements(
+        self,
+        schema: JourneyGuideSchemaV2,
+        rule: SelectorRuleV2,
+        default_stars: int,
+    ) -> list[JourneyRequirement]:
+        requirements: list[JourneyRequirement] = []
+        min_stars = (
+            rule.min_each.stars if rule.min_each.stars is not None else default_stars
+        )
+        for unit_id in rule.filter.include_ids:
+            catalog_entry = schema.catalog.units.get(unit_id)
+            unit_name = catalog_entry.name if catalog_entry is not None else unit_id
+            requirements.append(
+                JourneyRequirement(
+                    unit_id=unit_id,
+                    unit_name=unit_name,
+                    required_relic=rule.min_each.relic,
+                    required_gear=rule.min_each.gear,
+                    required_stars=min_stars,
+                )
+            )
+        return requirements
+
+    def _dedupe_requirements(
+        self,
+        requirements: list[JourneyRequirement],
+    ) -> list[JourneyRequirement]:
+        merged: dict[str, JourneyRequirement] = {}
+        for requirement in requirements:
+            key = requirement.unit_id or requirement.unit_name
+            existing = merged.get(key)
+            if existing is None:
+                merged[key] = requirement
+                continue
+            existing.required_stars = max(
+                existing.required_stars, requirement.required_stars
+            )
+            existing.required_relic = self._max_optional(
+                existing.required_relic,
+                requirement.required_relic,
+            )
+            existing.required_gear = self._max_optional(
+                existing.required_gear,
+                requirement.required_gear,
+            )
+        return list(merged.values())
+
+    def _max_optional(self, left: int | None, right: int | None) -> int | None:
+        if left is None:
+            return right
+        if right is None:
+            return left
+        return max(left, right)
 
     def _default_requirements_path(self) -> Path:
-        return Path(__file__).parent.parent.parent / "data" / GL_REQUIREMENTS_FILENAME
+        return (
+            Path(__file__).parent.parent.parent
+            / "data"
+            / JOURNEY_GUIDE_REQUIREMENTS_FILENAME
+        )

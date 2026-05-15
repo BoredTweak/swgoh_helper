@@ -9,6 +9,7 @@ from swgoh_helper.rote_coverage import (
     PathEligibilityFilter,
     RoteRequirementsLoader,
     CoverageAnalyzer,
+    filter_requirements_by_planet_identifiers,
 )
 from swgoh_helper.rote_models import RotePath, UnitRequirement
 from swgoh_helper.models import (
@@ -20,7 +21,6 @@ from swgoh_helper.models import (
     UnitData,
     ArenaSquad,
 )
-
 
 # ============================================================================
 # Fixtures
@@ -429,6 +429,51 @@ def test_coverage_analyzer_basic(mock_units_response, mock_player_roster):
     # R8 requirement should NOT be covered (player only has R7)
     r8_result = results[1]
     assert r8_result.players_available == 0
+
+
+def test_filter_requirements_by_planet_identifiers_phase_one_planets():
+    """Planet ID filters should support DS1, N1, and LS1 aliases."""
+    requirements = RoteRequirementsLoader.load()
+
+    filtered = filter_requirements_by_planet_identifiers(
+        requirements, ["ds1", "N1", "ls1"]
+    )
+
+    assert filtered.requirements
+    territories = {req.territory for req in filtered.requirements}
+    assert territories == {"Mustafar", "Corellia", "Coruscant"}
+
+
+def test_filter_requirements_by_planet_identifiers_ignores_invalid_values():
+    """Invalid planet IDs should be ignored without affecting valid IDs."""
+    requirements = RoteRequirementsLoader.load()
+
+    filtered = filter_requirements_by_planet_identifiers(
+        requirements, ["DS1", "bad", "N-3"]
+    )
+
+    assert filtered.requirements
+    assert {req.territory for req in filtered.requirements} == {"Mustafar"}
+
+
+def test_filter_requirements_by_planet_identifiers_excludes_bonus_by_default():
+    """Selecting base phase planets should not include bonus planets."""
+    requirements = RoteRequirementsLoader.load()
+
+    filtered = filter_requirements_by_planet_identifiers(requirements, ["N3"])
+
+    territories = {req.territory for req in filtered.requirements}
+    assert territories == {"Tatooine"}
+
+
+def test_filter_requirements_by_planet_identifiers_includes_bonus_when_explicit():
+    """Bonus planet IDs should be selectable with a trailing B suffix."""
+    requirements = RoteRequirementsLoader.load()
+
+    filtered = filter_requirements_by_planet_identifiers(requirements, ["LS3B"])
+
+    territories = {req.territory for req in filtered.requirements}
+    assert territories == {"Zeffo"}
 
 
 if __name__ == "__main__":

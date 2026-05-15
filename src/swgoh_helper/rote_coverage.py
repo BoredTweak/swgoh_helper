@@ -9,6 +9,7 @@ import json
 from pathlib import Path
 from typing import Dict, List, Optional, Tuple
 
+from .constants import PATH_TO_PLANET_PREFIX
 from .models import CombatType, PlayerResponse, Unit, UnitsResponse
 from .models.rote import (
     RotePath,
@@ -354,5 +355,83 @@ def filter_requirements_by_phase(
     return SimpleRoteRequirements(
         version=requirements.version,
         last_updated=requirements.last_updated,
+        notes=requirements.notes,
+        requirements=filtered_reqs,
+    )
+
+
+def _normalize_planet_identifier(identifier: str) -> str:
+    """Normalize user planet identifiers like DS1, N3B into canonical form."""
+    normalized = identifier.strip().upper().replace(" ", "")
+    if not normalized:
+        return ""
+
+    def _normalize_suffix(suffix: str) -> str:
+        is_bonus = suffix.endswith("B")
+        phase_number = suffix[:-1] if is_bonus else suffix
+        if not phase_number.isdigit():
+            return ""
+        return f"{phase_number}{'B' if is_bonus else ''}"
+
+    if normalized.startswith("DS"):
+        suffix = _normalize_suffix(normalized[2:])
+        return f"DS{suffix}" if suffix else ""
+
+    if normalized.startswith("LS"):
+        suffix = _normalize_suffix(normalized[2:])
+        return f"LS{suffix}" if suffix else ""
+
+    if normalized.startswith("N"):
+        suffix = _normalize_suffix(normalized[1:])
+        return f"N{suffix}" if suffix else ""
+
+    return ""
+
+
+def _requirement_planet_identifier(requirement: UnitRequirement) -> str:
+    """Build a planet identifier (e.g., DS1) for a requirement when possible."""
+    prefix = PATH_TO_PLANET_PREFIX.get(requirement.path)
+    if prefix is None:
+        return ""
+
+    phase = RoteConfig.TERRITORY_PHASE.get(requirement.territory)
+    if phase is None:
+        return ""
+
+    phase_text = phase.upper()
+    is_bonus = phase_text.endswith("B")
+    phase_number = phase_text[:-1] if is_bonus else phase_text
+    if not phase_number.isdigit():
+        return ""
+
+    return f"{prefix}{phase_number}{'B' if is_bonus else ''}"
+
+
+def filter_requirements_by_planet_identifiers(
+    requirements: SimpleRoteRequirements,
+    planet_identifiers: List[str],
+) -> SimpleRoteRequirements:
+    """Filter requirements to only include user-selected planet IDs (DS#/LS#/N#)."""
+    normalized_ids = {
+        cleaned
+        for cleaned in (
+            _normalize_planet_identifier(planet_id) for planet_id in planet_identifiers
+        )
+        if cleaned
+    }
+
+    if not normalized_ids:
+        return requirements
+
+    filtered_reqs = [
+        req
+        for req in requirements.requirements
+        if _requirement_planet_identifier(req) in normalized_ids
+    ]
+
+    return SimpleRoteRequirements(
+        version=requirements.version,
+        last_updated=requirements.last_updated,
+        notes=requirements.notes,
         requirements=filtered_reqs,
     )

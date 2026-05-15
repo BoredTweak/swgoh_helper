@@ -1,8 +1,8 @@
 """
 Bonus Zone Readiness Analyzer for Rise of the Empire Territory Battle.
 
-Zeffo:     Cere Junda AND (Cal Kestis OR JK Cal Kestis) at R7 — need 30/30
-Mandalore: Bo-Katan (Mand'alor) AND Beskar Mando at R7 — need 25/25
+Zeffo:     Cere Junda AND (Cal Kestis OR JK Cal Kestis) at R7 - need 30/30
+Mandalore: Bo-Katan (Mand'alor) AND Beskar Mando at R7 - need 25/25
 
 JK Cal Kestis (easy mode), Bo-Katan, and Beskar Mando all require unlock chains.
 Distance scoring: (relic_gap x 1.0) + (gear_gap x 0.5) + (star_gap x 2.0)
@@ -14,12 +14,8 @@ from pathlib import Path
 from typing import Dict, List, Optional, Set
 
 from swgoh_helper.constants import (
-    BESKAR_MIN_GEAR,
-    BESKAR_MIN_STARS,
-    BESKAR_PREREQS,
-    BOKATAN_MIN_RELIC,
-    BOKATAN_PREREQS,
     GEAR_WEIGHT,
+    JOURNEY_GUIDE_REQUIREMENTS_FILENAME,
     MANDALORE_THRESHOLD,
     MIN_RELIC_TIER,
     RELIC_STAR_REQUIREMENTS,
@@ -27,15 +23,27 @@ from swgoh_helper.constants import (
     STAR_WEIGHT,
     ZEFFO_THRESHOLD,
 )
-from swgoh_helper.models import PlayerResponse, UnitData
+from swgoh_helper.models import (
+    AllExprV2,
+    AnyExprV2,
+    AtLeastExprV2,
+    JourneyGuideSchemaV2,
+    NoneExprV2,
+    PlayerResponse,
+    RefExprV2,
+    RequirementExprV2,
+    UnitData,
+    UnitExprV2,
+    UnitRuleV2,
+)
 from swgoh_helper.models.rote import (
     BonusZoneReadiness,
     PlayerDistance,
     PrereqStatus,
     UnitProgressStatus,
 )
-from swgoh_helper.progress_scorer import ProgressScorer
 from swgoh_helper.progress import ProgressNotifier
+from swgoh_helper.progress_scorer import ProgressScorer
 
 CLOSE_DISTANCE_THRESHOLD = 8.0
 UnitLookup = Dict[str, UnitData]
@@ -87,11 +95,110 @@ class BonusReadinessDataSource:
         return rosters
 
 
+class UnlockRequirementsSource:
+    """Loads Bo-Katan and Beskar unlock requirements from journey guide data."""
+
+    TARGET_IDS = {"MANDALORBOKATAN", "THEMANDALORIANBESKARARMOR"}
+
+    def __init__(self, requirements_path: Optional[Path] = None):
+        self.requirements_path = requirements_path or self._default_requirements_path()
+        self.default_stars = 7
+        self.unit_names: dict[str, str] = {}
+        self._rules_by_target = self._load_rules_by_target()
+
+    @staticmethod
+    def _default_requirements_path() -> Path:
+        data_dir = BonusReadinessDataSource.get_data_dir()
+        return data_dir / JOURNEY_GUIDE_REQUIREMENTS_FILENAME
+
+    def rules_for(self, target_id: str) -> list[UnitRuleV2]:
+        return self._rules_by_target.get(target_id, [])
+
+    def display_name(self, unit_id: str) -> str:
+        return self.unit_names.get(unit_id, unit_id)
+
+    def _load_rules_by_target(self) -> dict[str, list[UnitRuleV2]]:
+        with self.requirements_path.open("r", encoding="utf-8") as file:
+            raw_data = json.load(file)
+        schema = JourneyGuideSchemaV2.model_validate(raw_data)
+        self.default_stars = schema.defaults.stars
+        self.unit_names = {
+            unit_id: entry.name for unit_id, entry in schema.catalog.units.items()
+        }
+
+        rules_by_target: dict[str, list[UnitRuleV2]] = {}
+        for target in schema.targets:
+            if target.id not in self.TARGET_IDS:
+                continue
+            flattened = self._flatten_unit_rules(schema, target.requirement, set())
+            rules_by_target[target.id] = self._dedupe_rules(flattened)
+        return rules_by_target
+
+    def _flatten_unit_rules(
+        self,
+        schema: JourneyGuideSchemaV2,
+        expression: RequirementExprV2,
+        seen_refs: set[str],
+    ) -> list[UnitRuleV2]:
+        if isinstance(expression, UnitExprV2):
+            return [expression.unit]
+        if isinstance(expression, RefExprV2):
+            return self._flatten_ref(schema, expression.ref, seen_refs)
+        if isinstance(expression, AtLeastExprV2):
+            return self._flatten_expressions(schema, expression.of, seen_refs)
+        if isinstance(expression, (AllExprV2, AnyExprV2, NoneExprV2)):
+            return self._flatten_expressions(schema, expression.items, seen_refs)
+        return []
+
+    def _flatten_expressions(
+        self,
+        schema: JourneyGuideSchemaV2,
+        expressions: list[RequirementExprV2],
+        seen_refs: set[str],
+    ) -> list[UnitRuleV2]:
+        rules: list[UnitRuleV2] = []
+        for expression in expressions:
+            rules.extend(self._flatten_unit_rules(schema, expression, seen_refs))
+        return rules
+
+    def _flatten_ref(
+        self,
+        schema: JourneyGuideSchemaV2,
+        ref: str,
+        seen_refs: set[str],
+    ) -> list[UnitRuleV2]:
+        if ref in seen_refs:
+            return []
+        expression = schema.catalog.sets.get(ref)
+        if expression is None:
+            return []
+        next_refs = set(seen_refs)
+        next_refs.add(ref)
+        return self._flatten_unit_rules(schema, expression, next_refs)
+
+    @staticmethod
+    def _dedupe_rules(rules: list[UnitRuleV2]) -> list[UnitRuleV2]:
+        unique: dict[str, UnitRuleV2] = {}
+        for rule in rules:
+            if rule.id not in unique:
+                unique[rule.id] = rule
+        return list(unique.values())
+
+
 class BonusReadinessAnalyzer:
     """Class-based analyzer for Zeffo and Mandalore readiness."""
 
-    def __init__(self, close_distance_threshold: float = CLOSE_DISTANCE_THRESHOLD):
+    def __init__(
+        self,
+        close_distance_threshold: float = CLOSE_DISTANCE_THRESHOLD,
+        journey_requirements_path: Optional[Path] = None,
+    ):
         self.close_distance_threshold = close_distance_threshold
+        self.requirements_source = UnlockRequirementsSource(journey_requirements_path)
+        self._bokatan_rules = self.requirements_source.rules_for("MANDALORBOKATAN")
+        self._beskar_rules = self.requirements_source.rules_for(
+            "THEMANDALORIANBESKARARMOR"
+        )
 
     @staticmethod
     def _unit_lookup(roster: PlayerResponse) -> UnitLookup:
@@ -146,21 +253,19 @@ class BonusReadinessAnalyzer:
 
     def _beskar_prereq_distance(self, units: UnitLookup) -> PrereqStatus:
         total, missing = 0.0, []
-        for prereq_id, prereq_name in BESKAR_PREREQS.items():
-            if prereq_id not in units:
+        for rule in self._beskar_rules:
+            if rule.id not in units:
                 total += float("inf")
-                missing.append(f"no {prereq_name}")
+                missing.append(f"no {self.requirements_source.display_name(rule.id)}")
                 continue
-            unit = units[prereq_id]
-            if unit.gear_level >= BESKAR_MIN_GEAR and unit.rarity >= BESKAR_MIN_STARS:
+            unit = units[rule.id]
+            if self._meets_rule(unit, rule):
                 continue
-            total += BONUS_SCORER.gear_distance(
-                gear_level=unit.gear_level,
-                rarity=unit.rarity,
-                required_gear=BESKAR_MIN_GEAR,
-                required_stars=BESKAR_MIN_STARS,
+            total += self._rule_distance(unit, rule)
+            missing.append(
+                f"{self.requirements_source.display_name(rule.id)}"
+                f"({self._current_progress_label(unit)})"
             )
-            missing.append(f"{prereq_name}({unit.rarity}*G{unit.gear_level})")
         return PrereqStatus(prereq_distance=total, missing_prereqs=missing)
 
     def _bokatan_prereq_distance(self, units: UnitLookup) -> PrereqStatus:
@@ -170,25 +275,67 @@ class BonusReadinessAnalyzer:
             total += beskar.prereq_distance
             missing.extend(beskar.missing_prereqs)
 
-        for prereq_id, prereq_name in BOKATAN_PREREQS.items():
-            if prereq_id not in units:
-                if prereq_id != "THEMANDALORIANBESKARARMOR":
+        for rule in self._bokatan_rules:
+            if rule.id not in units:
+                if rule.id != "THEMANDALORIANBESKARARMOR":
                     total += float("inf")
-                    missing.append(f"no {prereq_name}")
+                    missing.append(
+                        f"no {self.requirements_source.display_name(rule.id)}"
+                    )
                 continue
-            unit = units[prereq_id]
-            relic = unit.relic_tier_or_minus_one
-            if relic >= BOKATAN_MIN_RELIC:
+            unit = units[rule.id]
+            if self._meets_rule(unit, rule):
                 continue
-            total += BONUS_SCORER.unit_distance(
-                relic_tier=relic,
+            total += self._rule_distance(unit, rule)
+            missing.append(
+                f"{self.requirements_source.display_name(rule.id)}"
+                f"({self._current_progress_label(unit)})"
+            )
+        return PrereqStatus(prereq_distance=total, missing_prereqs=missing)
+
+    def _required_stars(self, rule: UnitRuleV2) -> int:
+        if rule.min.stars is not None:
+            return rule.min.stars
+        return self.requirements_source.default_stars
+
+    def _meets_rule(self, unit: UnitData, rule: UnitRuleV2) -> bool:
+        required_stars = self._required_stars(rule)
+        if unit.rarity < required_stars:
+            return False
+        if rule.min.relic is not None:
+            return unit.relic_tier_or_minus_one >= rule.min.relic
+        if rule.min.gear is not None:
+            return unit.gear_level >= rule.min.gear
+        return True
+
+    def _rule_distance(self, unit: UnitData, rule: UnitRuleV2) -> float:
+        required_stars = self._required_stars(rule)
+        required_relic = rule.min.relic
+        if required_relic is not None:
+            return BONUS_SCORER.unit_distance(
+                relic_tier=unit.relic_tier_or_minus_one,
                 gear_level=unit.gear_level,
                 rarity=unit.rarity,
-                required_relic=BOKATAN_MIN_RELIC,
+                required_relic=required_relic,
             )
-            label = f"R{relic}" if relic >= 0 else f"G{unit.gear_level}"
-            missing.append(f"{prereq_name}({label})")
-        return PrereqStatus(prereq_distance=total, missing_prereqs=missing)
+
+        required_gear = rule.min.gear
+        if required_gear is not None:
+            return BONUS_SCORER.gear_distance(
+                gear_level=unit.gear_level,
+                rarity=unit.rarity,
+                required_gear=required_gear,
+                required_stars=required_stars,
+            )
+
+        return max(0, required_stars - unit.rarity) * STAR_WEIGHT
+
+    @staticmethod
+    def _current_progress_label(unit: UnitData) -> str:
+        relic = unit.relic_tier_or_minus_one
+        if relic >= 0:
+            return f"R{relic}"
+        return f"{unit.rarity}*G{unit.gear_level}"
 
     def _char_detail(
         self,

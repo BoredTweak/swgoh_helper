@@ -4,13 +4,12 @@ from collections import defaultdict
 from typing import Dict, Optional
 
 from .constants import LIMITED_AVAILABILITY_CALLOUT_THRESHOLD
-from .models import CombatType, UnitType
+from .models import CombatType, RotePath, UnitType
 from .models.rote import BonusZoneReadiness
 from .rote_limited_availability_service import LimitedAvailabilityService
 from .rote_coverage import CoverageAnalyzer, RoteConfig
 from .rote_gap_analyzer import GapAnalyzer
 from .rote_bottleneck_analyzer import BottleneckAnalyzer
-from .rote_models import RotePath
 
 
 class RotePresenter:
@@ -45,6 +44,9 @@ class RotePresenter:
             lines.extend(
                 self._format_only_mine_requirements(analyzer, requester_ally_code)
             )
+
+        if output_format == "planets":
+            lines.extend(self._format_planet_requirements(analyzer))
 
         if output_format == "limited":
             lines.extend(
@@ -88,6 +90,65 @@ class RotePresenter:
             )
 
         return lines
+
+    def _format_planet_requirements(self, analyzer: CoverageAnalyzer) -> list[str]:
+        """List per-planet unit requirement coverage."""
+        lines = ["", "**Planet Requirements**"]
+        requirements_by_planet = self._group_requirements_by_territory(analyzer)
+
+        if not requirements_by_planet:
+            lines.append("No requirements found for the selected planets.")
+            return lines
+
+        for (_, territory), requirements in requirements_by_planet:
+            phase = RoteConfig.TERRITORY_PHASE.get(territory, "?")
+            lines.append(f"P{phase} {territory}:")
+
+            aggregated = self._aggregate_requirements_for_planet(analyzer, requirements)
+            for item in aggregated:
+                threshold = item["threshold"]
+                not_enough = item["guild_has"] < item["need"]
+                lines.append(
+                    f"- {item['unit_name']} {threshold}: need {item['need']}, guild has {item['guild_has']}"
+                    + (" ⚠️" if not_enough else "")
+                )
+            lines.append("")
+
+        return lines
+
+    def _aggregate_requirements_for_planet(
+        self, analyzer: CoverageAnalyzer, requirements
+    ) -> list[dict[str, object]]:
+        """Aggregate duplicate unit requirements for a single planet."""
+        grouped: dict[tuple[str, int, bool], dict[str, object]] = {}
+        for requirement in requirements:
+            is_ship = self._is_ship_requirement(requirement, analyzer)
+            key = (requirement.unit_id, requirement.min_relic, is_ship)
+
+            if key not in grouped:
+                grouped[key] = {
+                    "unit_name": requirement.unit_name,
+                    "need": 0,
+                    "guild_has": analyzer.matrix.get_count_at_relic(
+                        requirement.unit_id, requirement.min_relic
+                    ),
+                    "threshold": (
+                        f"{requirement.min_relic}*"
+                        if is_ship
+                        else f"R{requirement.min_relic}"
+                    ),
+                }
+
+            grouped[key]["need"] = int(grouped[key]["need"]) + requirement.count
+
+        return sorted(
+            grouped.values(),
+            key=lambda item: (
+                item["guild_has"],
+                item["unit_name"].casefold(),
+                item["threshold"],
+            ),
+        )
 
     def _is_character_unit(self, analyzer: CoverageAnalyzer, unit_id: str) -> bool:
         """Check whether a unit is a character in guild coverage data."""
@@ -251,7 +312,7 @@ class RotePresenter:
         """Format coverage summary with emoji status."""
         summary = analyzer.get_coverage_summary_by_territory()
         lines = []
-        paths = [RotePath.DARK_SIDE, RotePath.NEUTRAL, RotePath.LIGHT_SIDE]
+        paths = RoteConfig.PATHS
 
         for i, path in enumerate(paths):
             path_territories = [
