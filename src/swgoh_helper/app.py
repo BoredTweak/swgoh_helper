@@ -24,6 +24,7 @@ from .rote_gap_analyzer import GapAnalyzer
 from .rote_bottleneck_analyzer import BottleneckAnalyzer
 from .rote_presenter import RotePresenter
 from .rote_bonus_readiness import BonusReadinessAnalyzer
+from .gl_path_advisor import GLPathAdvisor
 from .exceptions import AppExecutionError
 
 
@@ -446,6 +447,44 @@ class RoteFarmAdvisorApp:
             raise AppExecutionError(f"Error: {e}") from e
 
 
+class GalacticLegendPathApp:
+    """Application for recommending Galactic Legend unlock paths."""
+
+    def __init__(self, api_key: str, progress: Optional[ProgressNotifier] = None):
+        self.progress = progress or ProgressNotifier()
+        self.service = SwgohDataService(api_key, progress=self.progress)
+        self.advisor = GLPathAdvisor()
+
+    def analyze_player(
+        self,
+        ally_code: str,
+        target_gl: Optional[str] = None,
+        top_n: int = 3,
+        include_unowned: bool = True,
+    ) -> str:
+        """Rank GL paths for a player and return a formatted report."""
+        try:
+            self.progress.update("Loading unit metadata...")
+            units_data = self.service.get_all_units()
+            self.progress.update(f"Fetching player data for ally code: {ally_code}...")
+            player_data = self.service.get_player(ally_code)
+            self.progress.update("Scoring Galactic Legend paths...")
+            report = self.advisor.analyze(
+                player=player_data,
+                units_data=units_data,
+                target_gl=target_gl,
+                top_n=top_n,
+                include_unowned=include_unowned,
+            )
+            return self.advisor.format_report(report)
+        except ValueError as e:
+            raise AppExecutionError(f"Error: {e}") from e
+        except requests.exceptions.RequestException as e:
+            raise AppExecutionError(f"Error fetching data: {e}") from e
+        except Exception as e:
+            raise AppExecutionError(f"Error: {e}") from e
+
+
 def print_usage():
     """Print usage information."""
     print("Usage: python app.py <command> [arguments]")
@@ -493,12 +532,22 @@ def print_usage():
     )
     print("                            --include-unowned: Include units you don't own")
     print()
+    print(
+        "  gl_path <ally_code> [--target GL_NAME] [--top N] [--owned-only]"
+    )
+    print("                            Rank Galactic Legend unlock paths for one player")
+    print("                            --target: Limit analysis to one GL by name match")
+    print("                            --top: Number of ranked paths to show (default: 3)")
+    print("                            --owned-only: Deprioritize unowned units")
+    print()
     print("Examples:")
     print("  python app.py kyrotech 123-456-789")
     print("  python app.py rote_platoon 123-456-789")
     print("  python app.py rote_platoon 123-456-789 --max-phase 4")
     print("  python app.py rote_platoon 123-456-789 --refresh")
     print("  python app.py rote_farm 123-456-789 --max-phase 4")
+    print("  python app.py gl_path 123-456-789 --top 5")
+    print("  python app.py gl_path 123-456-789 --target \"Jedi Master Kenobi\"")
 
 
 def run_kyrotech():
@@ -721,6 +770,52 @@ def run_rote_farm():
         sys.exit(1)
 
 
+def run_gl_path():
+    """Entry point for gl-path CLI command."""
+    if len(sys.argv) < 2:
+        print("Usage: gl-path <ally_code> [--target GL_NAME] [--top N] [--owned-only]")
+        sys.exit(1)
+
+    if not SWGOH_API_KEY:
+        print("Error: SWGOH_API_KEY not found in environment variables")
+        print("Please create a .env file with your API key")
+        sys.exit(1)
+
+    ally_code = sys.argv[1]
+    target_gl = None
+    top_n = 3
+    include_unowned = True
+    i = 2
+
+    while i < len(sys.argv):
+        arg = sys.argv[i]
+        if arg == "--target" and i + 1 < len(sys.argv):
+            target_gl = sys.argv[i + 1]
+            i += 2
+            continue
+        if arg == "--top" and i + 1 < len(sys.argv):
+            top_n = int(sys.argv[i + 1])
+            i += 2
+            continue
+        if arg == "--owned-only":
+            include_unowned = False
+        i += 1
+
+    app = GalacticLegendPathApp(SWGOH_API_KEY)
+    try:
+        output = app.analyze_player(
+            ally_code=ally_code,
+            target_gl=target_gl,
+            top_n=top_n,
+            include_unowned=include_unowned,
+        )
+        print(output)
+    except AppExecutionError as e:
+        print(str(e))
+        traceback.print_exc()
+        sys.exit(1)
+
+
 def main():
     """Main entry point for the application."""
     if len(sys.argv) < 2:
@@ -737,6 +832,8 @@ def main():
         "rote-limited": run_rote_limited,
         "rote_farm": run_rote_farm,
         "rote-farm": run_rote_farm,
+        "gl_path": run_gl_path,
+        "gl-path": run_gl_path,
     }
 
     handler = handlers.get(command)

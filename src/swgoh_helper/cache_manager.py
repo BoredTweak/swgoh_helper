@@ -39,11 +39,13 @@ class CacheManager:
 
         try:
             cache_data = self._load_cache_file(cache_path)
+            if not isinstance(cache_data, dict):
+                return False
             return self._is_timestamp_valid(cache_data.get("timestamp"))
         except (json.JSONDecodeError, KeyError, ValueError, OSError):
             return False
 
-    def get(self, cache_key: str) -> Optional[dict]:
+    def get(self, cache_key: str) -> Optional[Any]:
         """Retrieve data from cache if valid, otherwise None."""
         cache_path = self._get_cache_path(cache_key)
 
@@ -52,6 +54,8 @@ class CacheManager:
 
         try:
             cache_data = self._load_cache_file(cache_path)
+            if not isinstance(cache_data, dict):
+                return None
             if not self._is_timestamp_valid(cache_data.get("timestamp")):
                 return None
             return cache_data.get("data")
@@ -94,6 +98,8 @@ class CacheManager:
         for cache_file in self.cache_dir.glob("*.json"):
             try:
                 cache_data = self._load_cache_file(cache_file)
+                if not isinstance(cache_data, dict):
+                    continue
                 timestamp = cache_data.get("timestamp")
                 if timestamp is None:
                     continue
@@ -136,7 +142,7 @@ class CacheManager:
             raise last_error
         raise OSError("Unknown cache I/O failure")
 
-    def _load_cache_file(self, cache_path: Path) -> dict:
+    def _load_cache_file(self, cache_path: Path) -> Any:
         with open(cache_path, "r", encoding="utf-8") as f:
             return json.load(f)
 

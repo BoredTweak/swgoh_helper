@@ -213,6 +213,10 @@ __marimo__/
 data/*
 !data/rote_platoon_requirements.json
 !data/relic_costs.json
+!data/gl_requirements.json
+
+# generated local reports
+reports/
 
 # VS Code settings
 .vscode/

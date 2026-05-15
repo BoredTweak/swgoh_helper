@@ -65,6 +65,10 @@ RELIC_STAR_REQUIREMENTS = {
 # Farming recommendations
 MAX_PLAYERS_PER_UNIT = 20  # Max players to show per unit in farming recommendations
 
+# Galactic Legend path planning
+GL_REQUIREMENTS_FILENAME = "gl_requirements.json"
+UNOWNED_UNIT_PENALTY = 15.0
+
 # Limited-availability policy
 LIMITED_AVAILABILITY_BASE_THRESHOLD = 3
 LIMITED_AVAILABILITY_CALLOUT_THRESHOLD = 4

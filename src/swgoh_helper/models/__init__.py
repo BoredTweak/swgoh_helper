@@ -101,6 +101,15 @@ from .stats import StatDefinition
 # Kyrotech
 from .kyrotech import CharacterKyrotechResult
 
+# Galactic Legend Pathing
+from .galactic_legend import (
+    GLRequirement,
+    GLPathDefinition,
+    GLRequirementProgress,
+    GLPathScore,
+    GLPathReport,
+)
+
 __all__ = [
     # Enums
     "CombatType",
@@ -181,4 +190,10 @@ __all__ = [
     "StatDefinition",
     # Kyrotech
     "CharacterKyrotechResult",
+    # Galactic Legend Pathing
+    "GLRequirement",
+    "GLPathDefinition",
+    "GLRequirementProgress",
+    "GLPathScore",
+    "GLPathReport",
 ]
