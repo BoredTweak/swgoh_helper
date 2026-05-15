@@ -58,6 +58,7 @@ class GLPathAdvisor:
         scores = [
             self._score_path(path, unit_index, player_units, include_unowned)
             for path in candidate_paths
+            if not self._player_owns_gl(path, unit_index, player_units)
         ]
         ranked = sorted(
             scores,
@@ -104,7 +105,9 @@ class GLPathAdvisor:
         completed_steps = [req for req in path.all_requirements if req.complete]
         if completed_steps:
             lines.append("    Already have:")
-            for idx, req in enumerate(sorted(completed_steps, key=lambda r: r.unit_name), 1):
+            for idx, req in enumerate(
+                sorted(completed_steps, key=lambda r: r.unit_name), 1
+            ):
                 lines.append(f"    {idx}. {self._format_completed_requirement(req)}")
         if not path.missing_requirements:
             lines.append("    Unlock path: already complete")
@@ -252,6 +255,17 @@ class GLPathAdvisor:
             return base
         penalty = UNOWNED_UNIT_PENALTY if include_unowned else UNOWNED_UNIT_PENALTY * 4
         return base + penalty
+
+    def _player_owns_gl(
+        self,
+        path: GLPathDefinition,
+        unit_index: dict[str, Unit],
+        player_units: dict[str, object],
+    ) -> bool:
+        unit = self._resolve_unit(path.gl_name, unit_index)
+        if unit is None:
+            return False
+        return unit.base_id in player_units
 
     def _filter_paths(self, target_gl: str | None) -> list[GLPathDefinition]:
         if not target_gl:
