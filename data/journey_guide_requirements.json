@@ -1,0 +1,1154 @@
+{
+  "schema_version": "2.0.0",
+  "updated_at": "2026-05-15",
+  "defaults": {
+    "stars": 7
+  },
+  "catalog": {
+    "units": {},
+    "tags": {},
+    "sets": {}
+  },
+  "targets": [
+    {
+      "id": "BB8",
+      "name": "BB-8",
+      "kind": "journey_character",
+      "requirement": {
+        "type": "selector",
+        "selector": {
+          "filter": {
+            "include_ids": [
+              "DARKREY",
+              "FIRSTORDEREXECUTIONER",
+              "FIRSTORDEROFFICERMALE",
+              "FIRSTORDERSPECIALFORCESPILOT",
+              "FIRSTORDERTIEPILOT",
+              "FIRSTORDERTROOPER",
+              "FOSITHTROOPER",
+              "GENERALHUX",
+              "KYLOREN",
+              "KYLORENUNMASKED",
+              "PHASMA",
+              "SUPREMELEADERKYLOREN"
+            ]
+          },
+          "count": 5,
+          "min_each": { "stars": 7 }
+        }
+      }
+    },
+    {
+      "id": "BAYLANSKOLL",
+      "name": "Baylan Skoll",
+      "kind": "journey_character",
+      "requirement": {
+        "type": "all",
+        "items": [
+          { "type": "unit", "unit": { "id": "SHINHATI", "min": { "stars": 7, "relic": 7 } } },
+          { "type": "unit", "unit": { "id": "MARROK", "min": { "stars": 7, "relic": 7 } } },
+          { "type": "unit", "unit": { "id": "MORGANELSBETH", "min": { "stars": 7, "relic": 7 } } },
+          { "type": "unit", "unit": { "id": "GREATMOTHERS", "min": { "stars": 7, "relic": 7 } } },
+          { "type": "unit", "unit": { "id": "GRANDADMIRALTHRAWN", "min": { "stars": 7, "relic": 7 } } }
+        ]
+      }
+    },
+    {
+      "id": "MANDALORBOKATAN",
+      "name": "Bo-Katan (Mand'alor)",
+      "kind": "journey_character",
+      "requirement": {
+        "type": "all",
+        "items": [
+          { "type": "unit", "unit": { "id": "KELLERANBEQ", "min": { "stars": 7, "relic": 7 } } },
+          { "type": "unit", "unit": { "id": "PAZVIZSLA", "min": { "stars": 7, "relic": 7 } } },
+          { "type": "unit", "unit": { "id": "IG12", "min": { "stars": 7, "relic": 7 } } },
+          {
+            "type": "unit",
+            "unit": { "id": "THEMANDALORIANBESKARARMOR", "min": { "stars": 7, "relic": 7 } }
+          }
+        ]
+      }
+    },
+    {
+      "id": "C3POLEGENDARY",
+      "name": "C-3PO",
+      "kind": "journey_character",
+      "requirement": {
+        "type": "all",
+        "items": [
+          { "type": "unit", "unit": { "id": "CHIEFCHIRPA", "min": { "stars": 7 } } },
+          { "type": "unit", "unit": { "id": "EWOKELDER", "min": { "stars": 7 } } },
+          { "type": "unit", "unit": { "id": "EWOKSCOUT", "min": { "stars": 7 } } },
+          { "type": "unit", "unit": { "id": "LOGRAY", "min": { "stars": 7 } } },
+          { "type": "unit", "unit": { "id": "PAPLOO", "min": { "stars": 7 } } },
+          { "type": "unit", "unit": { "id": "PRINCESSKNEESAA", "min": { "stars": 7 } } },
+          { "type": "unit", "unit": { "id": "TEEBO", "min": { "stars": 7 } } },
+          { "type": "unit", "unit": { "id": "WICKET", "min": { "stars": 7 } } }
+        ]
+      }
+    },
+    {
+      "id": "CASSIANUNDERCOVER",
+      "name": "Cassian Andor (Undercover)",
+      "kind": "journey_character",
+      "requirement": { "type": "all", "items": [] }
+    },
+    {
+      "id": "CHEWBACCALEGENDARY",
+      "name": "Chewbacca",
+      "kind": "journey_character",
+      "requirement": {
+        "type": "selector",
+        "selector": {
+          "filter": {
+            "include_ids": [
+              "4LOM",
+              "ASAJJDARKDISCIPLE",
+              "AURRA_SING",
+              "BOBAFETT",
+              "BOBAFETTSCION",
+              "BOSSK",
+              "BOUSHH",
+              "CADBANE",
+              "DENGAR",
+              "EMBO",
+              "FENNECSHAND",
+              "GREEDO",
+              "GREEFKARGA",
+              "IG88",
+              "IG90",
+              "JABBATHEHUTT",
+              "JANGOFETT",
+              "KRRSANTAN",
+              "THEMANDALORIAN",
+              "ZAMWESELL",
+              "ZUCKUSS"
+            ]
+          },
+          "count": 5,
+          "min_each": { "stars": 7 }
+        }
+      }
+    },
+    {
+      "id": "COMMANDERLUKESKYWALKER",
+      "name": "Commander Luke Skywalker",
+      "kind": "journey_character",
+      "requirement": {
+        "type": "all",
+        "items": [
+          { "type": "unit", "unit": { "id": "LUKESKYWALKER", "min": { "stars": 7 } } },
+          { "type": "unit", "unit": { "id": "PRINCESSLEIA", "min": { "stars": 7 } } },
+          { "type": "unit", "unit": { "id": "STORMTROOPERHAN", "min": { "stars": 7 } } },
+          { "type": "unit", "unit": { "id": "R2D2_LEGENDARY", "min": { "stars": 7 } } },
+          { "type": "unit", "unit": { "id": "OLDBENKENOBI", "min": { "stars": 7 } } }
+        ]
+      }
+    },
+    {
+      "id": "DARTHMALAK",
+      "name": "Darth Malak",
+      "kind": "journey_character",
+      "requirement": {
+        "type": "all",
+        "items": [
+          { "type": "unit", "unit": { "id": "JEDIKNIGHTREVAN", "min": { "stars": 7 } } },
+          { "type": "unit", "unit": { "id": "DARTHREVAN", "min": { "stars": 7 } } },
+          {
+            "type": "all",
+            "items": [
+              {
+                "type": "unit",
+                "unit": { "id": "JEDIKNIGHTREVAN", "min": { "stars": 7, "power": 17500 } }
+              },
+              {
+                "type": "at_least",
+                "count": 3,
+                "of": [
+                  { "type": "unit", "unit": { "id": "BASTILASHAN", "min": { "stars": 7, "power": 17500 } } },
+                  { "type": "unit", "unit": { "id": "JOLEEBINDO", "min": { "stars": 7, "power": 17500 } } },
+                  { "type": "unit", "unit": { "id": "MISSIONVAO", "min": { "stars": 7, "power": 17500 } } },
+                  { "type": "unit", "unit": { "id": "T3_M4", "min": { "stars": 7, "power": 17500 } } },
+                  { "type": "unit", "unit": { "id": "ZAALBAR", "min": { "stars": 7, "power": 17500 } } }
+                ]
+              }
+            ]
+          },
+          {
+            "type": "all",
+            "items": [
+              {
+                "type": "unit",
+                "unit": { "id": "DARTHREVAN", "min": { "stars": 7, "power": 17500 } }
+              },
+              {
+                "type": "at_least",
+                "count": 3,
+                "of": [
+                  {
+                    "type": "unit",
+                    "unit": { "id": "BASTILASHANDARK", "min": { "stars": 7, "power": 17500 } }
+                  },
+                  {
+                    "type": "unit",
+                    "unit": { "id": "CANDEROUSORDO", "min": { "stars": 7, "power": 17500 } }
+                  },
+                  { "type": "unit", "unit": { "id": "CARTHONASI", "min": { "stars": 7, "power": 17500 } } },
+                  { "type": "unit", "unit": { "id": "HK47", "min": { "stars": 7, "power": 17500 } } },
+                  { "type": "unit", "unit": { "id": "JUHANI", "min": { "stars": 7, "power": 17500 } } }
+                ]
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "id": "DARTHREVAN",
+      "name": "Darth Revan",
+      "kind": "journey_character",
+      "requirement": {
+        "type": "all",
+        "items": [
+          { "type": "unit", "unit": { "id": "BASTILASHANDARK", "min": { "stars": 7 } } },
+          { "type": "unit", "unit": { "id": "CANDEROUSORDO", "min": { "stars": 7 } } },
+          { "type": "unit", "unit": { "id": "CARTHONASI", "min": { "stars": 7 } } },
+          { "type": "unit", "unit": { "id": "HK47", "min": { "stars": 7 } } },
+          { "type": "unit", "unit": { "id": "JUHANI", "min": { "stars": 7 } } }
+        ]
+      }
+    },
+    {
+      "id": "DOCTORAPHRA",
+      "name": "Doctor Aphra",
+      "kind": "journey_character",
+      "requirement": {
+        "type": "all",
+        "items": [
+          { "type": "unit", "unit": { "id": "HONDO", "min": { "stars": 7, "relic": 5 } } },
+          { "type": "unit", "unit": { "id": "TRIPLEZERO", "min": { "stars": 7, "relic": 5 } } },
+          { "type": "unit", "unit": { "id": "BT1", "min": { "stars": 7, "relic": 5 } } },
+          { "type": "unit", "unit": { "id": "SANASTARROS", "min": { "stars": 7, "relic": 5 } } }
+        ]
+      }
+    },
+    {
+      "id": "EMPERORPALPATINE",
+      "name": "Emperor Palpatine",
+      "kind": "journey_character",
+      "requirement": {
+        "type": "selector",
+        "selector": {
+          "filter": {
+            "include_ids": [
+              "ADMINISTRATORLANDO",
+              "ADMIRALACKBAR",
+              "ADMIRALRADDUS",
+              "BAZEMALBUS",
+              "BIGGSDARKLIGHTER",
+              "BISTAN",
+              "BODHIROOK",
+              "C3POCHEWBACCA",
+              "C3POLEGENDARY",
+              "CAPTAINDROGAN",
+              "CAPTAINREX",
+              "CARADUNE",
+              "CARSONTEVA",
+              "CASSIANANDOR",
+              "CASSIANUNDERCOVER",
+              "CHEWBACCALEGENDARY",
+              "CHIRRUTIMWE",
+              "CHOPPERS3",
+              "CINTA",
+              "COMMANDERLUKESKYWALKER",
+              "EZRABRIDGERS3",
+              "FULCRUMAHSOKA",
+              "GLLEIA",
+              "HANSOLO",
+              "HERASYNDULLAS3",
+              "HOTHHAN",
+              "HOTHLEIA",
+              "HOTHREBELSCOUT",
+              "HOTHREBELSOLDIER",
+              "JYNERSO",
+              "K2SO",
+              "KANANJARRUSS3",
+              "KLEYA",
+              "KYLEKATARN",
+              "LOBOT",
+              "LUKESKYWALKER",
+              "LUTHENRAEL",
+              "MONMOTHMA",
+              "OLDBENKENOBI",
+              "PAO",
+              "PRINCESSLEIA",
+              "R2D2_LEGENDARY",
+              "R5D4",
+              "SABINEWRENS3",
+              "SAWGERRERA",
+              "SCARIFREBEL",
+              "STORMTROOPERHAN",
+              "STORMTROOPERLUKE",
+              "VEL",
+              "WEDGEANTILLES",
+              "ZEBS3"
+            ]
+          },
+          "count": 5,
+          "min_each": { "stars": 7 }
+        }
+      }
+    },
+    {
+      "id": "GENERALSKYWALKER",
+      "name": "General Skywalker",
+      "kind": "journey_character",
+      "requirement": {
+        "type": "all",
+        "items": [
+          { "type": "unit", "unit": { "id": "ASAJVENTRESS", "min": { "stars": 7 } } },
+          { "type": "unit", "unit": { "id": "B1BATTLEDROIDV2", "min": { "stars": 7 } } },
+          { "type": "unit", "unit": { "id": "B2SUPERBATTLEDROID", "min": { "stars": 7 } } },
+          { "type": "unit", "unit": { "id": "DROIDEKA", "min": { "stars": 7 } } },
+          { "type": "unit", "unit": { "id": "MAGNAGUARD", "min": { "stars": 7 } } },
+          { "type": "unit", "unit": { "id": "AHSOKATANO", "min": { "stars": 7 } } },
+          { "type": "unit", "unit": { "id": "C3POLEGENDARY", "min": { "stars": 7 } } },
+          { "type": "unit", "unit": { "id": "GENERALKENOBI", "min": { "stars": 7 } } },
+          { "type": "unit", "unit": { "id": "PADMEAMIDALA", "min": { "stars": 7 } } },
+          { "type": "unit", "unit": { "id": "SHAAKTI", "min": { "stars": 7 } } },
+          { "type": "unit", "unit": { "id": "JEDISTARFIGHTERANAKIN", "min": { "stars": 7 } } }
+        ]
+      }
+    },
+    {
+      "id": "MILLENNIUMFALCON",
+      "name": "Han's Millennium Falcon",
+      "kind": "journey_character",
+      "requirement": {
+        "type": "all",
+        "items": [
+          {
+            "type": "unit",
+            "unit": {
+              "id": "FACTION_BOUNTYHUNTER_SHIPS",
+              "min": { "stars": 7, "custom": { "legacy_unit_type": "ship_group" } }
+            }
+          },
+          {
+            "type": "unit",
+            "unit": {
+              "id": "ANY_CAPITAL_SHIP",
+              "min": { "stars": 7, "custom": { "legacy_unit_type": "capital_ship_group" } }
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": "GRANDADMIRALTHRAWN",
+      "name": "Grand Admiral Thrawn",
+      "kind": "journey_character",
+      "requirement": {
+        "type": "selector",
+        "selector": {
+          "filter": {
+            "include_ids": [
+              "CAPTAINREX",
+              "CHOPPERS3",
+              "EZRABRIDGERS3",
+              "HERASYNDULLAS3",
+              "KANANJARRUSS3",
+              "SABINEWRENS3",
+              "ZEBS3"
+            ]
+          },
+          "count": 5,
+          "min_each": { "stars": 7 }
+        }
+      }
+    },
+    {
+      "id": "GRANDINQUISITOR",
+      "name": "Grand Inquisitor",
+      "kind": "journey_character",
+      "requirement": {
+        "type": "all",
+        "items": [
+          { "type": "unit", "unit": { "id": "SECONDSISTER", "min": { "stars": 7, "relic": 5 } } },
+          { "type": "unit", "unit": { "id": "NINTHSISTER", "min": { "stars": 7, "relic": 5 } } },
+          { "type": "unit", "unit": { "id": "SEVENTHSISTER", "min": { "stars": 7, "relic": 5 } } },
+          { "type": "unit", "unit": { "id": "EIGHTHBROTHER", "min": { "stars": 7, "relic": 5 } } },
+          { "type": "unit", "unit": { "id": "FIFTHBROTHER", "min": { "stars": 7, "relic": 5 } } }
+        ]
+      }
+    },
+    {
+      "id": "GRANDMASTERYODA",
+      "name": "Grand Master Yoda",
+      "kind": "journey_character",
+      "requirement": {
+        "type": "selector",
+        "selector": {
+          "filter": {
+            "include_ids": [
+              "AAYLASECURA",
+              "AHSOKATANO",
+              "ANAKINKNIGHT",
+              "BARRISSOFFEE",
+              "BASTILASHAN",
+              "DEPABILLABA",
+              "EETHKOTH",
+              "EZRABRIDGERS3",
+              "EZRAEXILE",
+              "GENERALKENOBI",
+              "GENERALSKYWALKER",
+              "GRANDMASTERLUKE",
+              "GRANDMASTERYODA",
+              "HERMITYODA",
+              "IMAGUNDI",
+              "JEDIKNIGHTCAL",
+              "JEDIKNIGHTCONSULAR",
+              "JEDIKNIGHTGUARDIAN",
+              "JEDIKNIGHTLUKE",
+              "JEDIKNIGHTREVAN",
+              "JEDIMASTERKENOBI",
+              "JEDIMASTERMACEWINDU",
+              "JOCASTANU",
+              "JOLEEBINDO",
+              "JUHANI",
+              "KANANJARRUSS3",
+              "KELLERANBEQ",
+              "KIADIMUNDI",
+              "KITFISTO",
+              "KYLEKATARN",
+              "LUMINARAUNDULI",
+              "MACEWINDU",
+              "MASTERQUIGON",
+              "OLDBENKENOBI",
+              "PADAWANOBIWAN",
+              "PLOKOON",
+              "QUIGONJINN",
+              "SATELESHAN",
+              "SHAAKTI",
+              "VANGUARDTEMPLEGUARD",
+              "YODACHEWBACCA"
+            ]
+          },
+          "count": 5,
+          "min_each": { "stars": 7 }
+        }
+      }
+    },
+    {
+      "id": "JARJARBINKS",
+      "name": "Jar Jar Binks",
+      "kind": "journey_character",
+      "requirement": {
+        "type": "all",
+        "items": [
+          { "type": "unit", "unit": { "id": "BOSSNASS", "min": { "stars": 7, "relic": 5 } } },
+          { "type": "unit", "unit": { "id": "CAPTAINTARPALS", "min": { "stars": 7, "relic": 5 } } },
+          { "type": "unit", "unit": { "id": "BOOMADIER", "min": { "stars": 7, "relic": 5 } } },
+          { "type": "unit", "unit": { "id": "GUNGANPHALANX", "min": { "stars": 7, "relic": 5 } } }
+        ]
+      }
+    },
+    {
+      "id": "JEDIKNIGHTCAL",
+      "name": "Jedi Knight Cal Kestis",
+      "kind": "journey_character",
+      "requirement": {
+        "type": "all",
+        "items": [
+          { "type": "unit", "unit": { "id": "CALKESTIS", "min": { "stars": 7, "gear": 12 } } },
+          { "type": "unit", "unit": { "id": "CEREJUNDA", "min": { "stars": 7, "gear": 12 } } },
+          { "type": "unit", "unit": { "id": "MERRIN", "min": { "stars": 7, "gear": 12 } } },
+          { "type": "unit", "unit": { "id": "TARFFUL", "min": { "stars": 7, "gear": 12 } } },
+          { "type": "unit", "unit": { "id": "SAWGERRERA", "min": { "stars": 7, "gear": 12 } } }
+        ]
+      }
+    },
+    {
+      "id": "JEDIKNIGHTLUKE",
+      "name": "Jedi Knight Luke Skywalker",
+      "kind": "journey_character",
+      "requirement": {
+        "type": "all",
+        "items": [
+          {
+            "type": "unit",
+            "unit": { "id": "COMMANDERLUKESKYWALKER", "min": { "stars": 7, "relic": 3 } }
+          },
+          { "type": "unit", "unit": { "id": "HOTHLEIA", "min": { "stars": 7, "relic": 3 } } },
+          { "type": "unit", "unit": { "id": "HOTHHAN", "min": { "stars": 7, "relic": 3 } } },
+          { "type": "unit", "unit": { "id": "WAMPA", "min": { "stars": 7, "relic": 3 } } },
+          {
+            "type": "unit",
+            "unit": { "id": "CHEWBACCALEGENDARY", "min": { "stars": 7, "relic": 3 } }
+          },
+          { "type": "unit", "unit": { "id": "VADER", "min": { "stars": 7, "relic": 3 } } },
+          { "type": "unit", "unit": { "id": "C3POLEGENDARY", "min": { "stars": 7, "relic": 3 } } },
+          {
+            "type": "unit",
+            "unit": { "id": "ADMINISTRATORLANDO", "min": { "stars": 7, "relic": 3 } }
+          },
+          { "type": "unit", "unit": { "id": "HERMITYODA", "min": { "stars": 7, "relic": 3 } } },
+          { "type": "unit", "unit": { "id": "MILLENNIUMFALCON", "min": { "stars": 7 } } },
+          { "type": "unit", "unit": { "id": "XWINGRED2", "min": { "stars": 7 } } }
+        ]
+      }
+    },
+    {
+      "id": "JEDIKNIGHTREVAN",
+      "name": "Jedi Knight Revan",
+      "kind": "journey_character",
+      "requirement": {
+        "type": "all",
+        "items": [
+          { "type": "unit", "unit": { "id": "MISSIONVAO", "min": { "stars": 7 } } },
+          { "type": "unit", "unit": { "id": "ZAALBAR", "min": { "stars": 7 } } },
+          { "type": "unit", "unit": { "id": "BASTILASHAN", "min": { "stars": 7 } } },
+          { "type": "unit", "unit": { "id": "T3_M4", "min": { "stars": 7 } } },
+          { "type": "unit", "unit": { "id": "JOLEEBINDO", "min": { "stars": 7 } } }
+        ]
+      }
+    },
+    {
+      "id": "MACEWINDU",
+      "name": "Jedi Master Mace Windu",
+      "kind": "journey_character",
+      "requirement": {
+        "type": "all",
+        "items": [
+          { "type": "unit", "unit": { "id": "APPO", "min": { "stars": 7, "relic": 5 } } },
+          { "type": "unit", "unit": { "id": "OPERATIVE", "min": { "stars": 7, "relic": 5 } } },
+          {
+            "type": "unit",
+            "unit": { "id": "DISGUISEDCLONETROOPER", "min": { "stars": 7, "relic": 5 } }
+          },
+          { "type": "unit", "unit": { "id": "SCORCH", "min": { "stars": 7, "relic": 5 } } },
+          {
+            "type": "unit",
+            "unit": { "id": "VANGUARDTEMPLEGUARD", "min": { "stars": 7, "relic": 5 } }
+          },
+          { "type": "unit", "unit": { "id": "DEPABILLABA", "min": { "stars": 7, "relic": 5 } } }
+        ]
+      }
+    },
+    {
+      "id": "MAULHATEFUELED",
+      "name": "Maul (Hate-Fueled)",
+      "kind": "journey_character",
+      "requirement": {
+        "type": "all",
+        "items": [
+          {
+            "type": "unit",
+            "unit": { "id": "STORMTROOPERLUKE", "min": { "stars": 7, "relic": 6 } }
+          },
+          { "type": "unit", "unit": { "id": "IG90", "min": { "stars": 7, "relic": 6 } } },
+          { "type": "unit", "unit": { "id": "YODACHEWBACCA", "min": { "stars": 7, "relic": 6 } } },
+          {
+            "type": "unit",
+            "unit": { "id": "ASAJJDARKDISCIPLE", "min": { "stars": 7, "relic": 6 } }
+          },
+          {
+            "type": "unit",
+            "unit": { "id": "INQUISITORBARRISS", "min": { "stars": 7, "relic": 6 } }
+          },
+          { "type": "unit", "unit": { "id": "VADERDUELSEND", "min": { "stars": 7, "relic": 6 } } }
+        ]
+      }
+    },
+    {
+      "id": "PADMEAMIDALA",
+      "name": "Padme Amidala",
+      "kind": "journey_character",
+      "requirement": {
+        "type": "selector",
+        "selector": {
+          "filter": {
+            "include_ids": [
+              "ASAJVENTRESS",
+              "B1BATTLEDROIDV2",
+              "B2SUPERBATTLEDROID",
+              "COUNTDOOKU",
+              "DROIDEKA",
+              "GEONOSIANBROODALPHA",
+              "GEONOSIANSOLDIER",
+              "GEONOSIANSPY",
+              "GRIEVOUS",
+              "JANGOFETT",
+              "MAGNAGUARD",
+              "NUTEGUNRAY",
+              "POGGLETHELESSER",
+              "STAP",
+              "SUNFAC",
+              "TRENCH",
+              "WATTAMBOR"
+            ]
+          },
+          "count": 5,
+          "min_each": { "stars": 7 }
+        }
+      }
+    },
+    {
+      "id": "R2D2_LEGENDARY",
+      "name": "R2-D2",
+      "kind": "journey_character",
+      "requirement": {
+        "type": "selector",
+        "selector": {
+          "filter": {
+            "include_ids": [
+              "ADMIRALPIETT",
+              "APPO",
+              "COLONELSTARCK",
+              "DARKTROOPER",
+              "DEATHTROOPER",
+              "DEDRAMEERO",
+              "DIRECTORKRENNIC",
+              "DISGUISEDCLONETROOPER",
+              "EIGHTHBROTHER",
+              "EMPERORPALPATINE",
+              "FIFTHBROTHER",
+              "GARSAXON",
+              "GRANDADMIRALTHRAWN",
+              "GRANDINQUISITOR",
+              "GRANDMOFFTARKIN",
+              "IDENVERSIOEMPIRE",
+              "IMPERIALPROBEDROID",
+              "IMPERIALSUPERCOMMANDO",
+              "INQUISITORBARRISS",
+              "KXSECURITYDROID",
+              "LORDVADER",
+              "MAGMATROOPER",
+              "MAJORPARTAGAZ",
+              "MARAJADE",
+              "MOFFGIDEONS1",
+              "MOFFGIDEONS3",
+              "NINTHSISTER",
+              "OPERATIVE",
+              "RANGETROOPER",
+              "REMNANTSNOWCOMMANDER",
+              "ROYALGUARD",
+              "SCORCH",
+              "SCOUTTROOPER_V3",
+              "SECONDSISTER",
+              "SEVENTHSISTER",
+              "SHORETROOPER",
+              "SNOWTROOPER",
+              "STORMTROOPER",
+              "THIRDSISTER",
+              "TIEFIGHTERPILOT",
+              "VADER",
+              "VADERDUELSEND",
+              "VEERS"
+            ]
+          },
+          "count": 5,
+          "min_each": { "stars": 7 }
+        }
+      }
+    },
+    {
+      "id": "REYJEDITRAINING",
+      "name": "Rey (Jedi Training)",
+      "kind": "journey_character",
+      "requirement": {
+        "type": "all",
+        "items": [
+          { "type": "unit", "unit": { "id": "REY", "min": { "stars": 7 } } },
+          { "type": "unit", "unit": { "id": "FINN", "min": { "stars": 7 } } },
+          { "type": "unit", "unit": { "id": "BB8", "min": { "stars": 7 } } },
+          { "type": "unit", "unit": { "id": "SMUGGLERHAN", "min": { "stars": 7 } } },
+          { "type": "unit", "unit": { "id": "SMUGGLERCHEWBACCA", "min": { "stars": 7 } } }
+        ]
+      }
+    },
+    {
+      "id": "STARKILLER",
+      "name": "Starkiller",
+      "kind": "journey_character",
+      "requirement": {
+        "type": "all",
+        "items": [
+          { "type": "unit", "unit": { "id": "DASHRENDAR", "min": { "stars": 7, "relic": 5 } } },
+          { "type": "unit", "unit": { "id": "KYLEKATARN", "min": { "stars": 7, "relic": 5 } } },
+          { "type": "unit", "unit": { "id": "DARTHTALON", "min": { "stars": 7, "relic": 5 } } },
+          { "type": "unit", "unit": { "id": "MARAJADE", "min": { "stars": 7, "relic": 5 } } }
+        ]
+      }
+    },
+    {
+      "id": "THEMANDALORIANBESKARARMOR",
+      "name": "The Mandalorian (Beskar Armor)",
+      "kind": "journey_character",
+      "requirement": {
+        "type": "all",
+        "items": [
+          { "type": "unit", "unit": { "id": "CARADUNE", "min": { "stars": 7 } } },
+          { "type": "unit", "unit": { "id": "IG11", "min": { "stars": 7 } } },
+          { "type": "unit", "unit": { "id": "GREEFKARGA", "min": { "stars": 7 } } },
+          { "type": "unit", "unit": { "id": "THEMANDALORIAN", "min": { "stars": 7 } } },
+          { "type": "unit", "unit": { "id": "KUIIL", "min": { "stars": 7 } } }
+        ]
+      }
+    },
+    {
+      "id": "CAPITALCHIMAERA",
+      "name": "Chimaera",
+      "kind": "capital_ship",
+      "requirement": {
+        "type": "all",
+        "items": [
+          { "type": "unit", "unit": { "id": "GHOST", "min": { "stars": 7 } } },
+          { "type": "unit", "unit": { "id": "PHANTOM2", "min": { "stars": 7 } } },
+          {
+            "type": "unit",
+            "unit": {
+              "id": "FACTION_REBEL_SHIPS",
+              "min": { "stars": 7, "custom": { "legacy_unit_type": "ship_group" } }
+            }
+          },
+          {
+            "type": "unit",
+            "unit": {
+              "id": "ANY_CAPITAL_SHIP",
+              "min": { "stars": 7, "custom": { "legacy_unit_type": "capital_ship_group" } }
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": "CAPITALEXECUTOR",
+      "name": "Executor",
+      "kind": "capital_ship",
+      "requirement": {
+        "type": "all",
+        "items": [
+          { "type": "unit", "unit": { "id": "VADER", "min": { "stars": 7, "relic": 7 } } },
+          { "type": "unit", "unit": { "id": "ADMIRALPIETT", "min": { "stars": 7, "relic": 8 } } },
+          { "type": "unit", "unit": { "id": "BOBAFETT", "min": { "stars": 7, "relic": 8 } } },
+          { "type": "unit", "unit": { "id": "DENGAR", "min": { "stars": 7, "relic": 5 } } },
+          { "type": "unit", "unit": { "id": "IG88", "min": { "stars": 7, "relic": 5 } } },
+          { "type": "unit", "unit": { "id": "BOSSK", "min": { "stars": 7, "relic": 5 } } },
+          { "type": "unit", "unit": { "id": "TIEFIGHTERPILOT", "min": { "stars": 7, "relic": 5 } } },
+          { "type": "unit", "unit": { "id": "TIEADVANCED", "min": { "stars": 7 } } },
+          { "type": "unit", "unit": { "id": "TIEBOMBERIMPERIAL", "min": { "stars": 7 } } },
+          { "type": "unit", "unit": { "id": "HOUNDSTOOTH", "min": { "stars": 7 } } },
+          { "type": "unit", "unit": { "id": "SLAVE1", "min": { "stars": 7 } } },
+          { "type": "unit", "unit": { "id": "IG2000", "min": { "stars": 7 } } },
+          { "type": "unit", "unit": { "id": "TIEFIGHTERIMPERIAL", "min": { "stars": 7 } } },
+          { "type": "unit", "unit": { "id": "RAZORCREST", "min": { "stars": 7 } } }
+        ]
+      }
+    },
+    {
+      "id": "CAPITALPROFUNDITY",
+      "name": "Profundity",
+      "kind": "capital_ship",
+      "requirement": {
+        "type": "all",
+        "items": [
+          { "type": "unit", "unit": { "id": "ADMIRALRADDUS", "min": { "stars": 7, "relic": 9 } } },
+          { "type": "unit", "unit": { "id": "CASSIANANDOR", "min": { "stars": 7, "relic": 8 } } },
+          { "type": "unit", "unit": { "id": "DASHRENDAR", "min": { "stars": 7, "relic": 7 } } },
+          { "type": "unit", "unit": { "id": "MONMOTHMA", "min": { "stars": 7, "relic": 5 } } },
+          { "type": "unit", "unit": { "id": "BISTAN", "min": { "stars": 7, "relic": 5 } } },
+          { "type": "unit", "unit": { "id": "JYNERSO", "min": { "stars": 7, "relic": 5 } } },
+          { "type": "unit", "unit": { "id": "HERASYNDULLAS3", "min": { "stars": 7, "relic": 5 } } },
+          { "type": "unit", "unit": { "id": "OUTRIDER", "min": { "stars": 7 } } },
+          { "type": "unit", "unit": { "id": "UWINGROGUEONE", "min": { "stars": 7 } } },
+          { "type": "unit", "unit": { "id": "UWINGSCARIF", "min": { "stars": 7 } } },
+          { "type": "unit", "unit": { "id": "XWINGRED2", "min": { "stars": 7 } } },
+          { "type": "unit", "unit": { "id": "XWINGRED3", "min": { "stars": 7 } } },
+          { "type": "unit", "unit": { "id": "YWINGREBEL", "min": { "stars": 7 } } },
+          { "type": "unit", "unit": { "id": "GHOST", "min": { "stars": 7 } } }
+        ]
+      }
+    },
+    {
+      "id": "CAPITALLEVIATHAN",
+      "name": "Leviathan",
+      "kind": "capital_ship",
+      "requirement": {
+        "type": "all",
+        "items": [
+          { "type": "unit", "unit": { "id": "DARTHREVAN", "min": { "stars": 7, "relic": 9 } } },
+          { "type": "unit", "unit": { "id": "DARTHMALAK", "min": { "stars": 7, "relic": 9 } } },
+          { "type": "unit", "unit": { "id": "SITHTROOPER", "min": { "stars": 7, "relic": 7 } } },
+          { "type": "unit", "unit": { "id": "FOSITHTROOPER", "min": { "stars": 7, "relic": 7 } } },
+          { "type": "unit", "unit": { "id": "MAUL", "min": { "stars": 7, "relic": 7 } } },
+          { "type": "unit", "unit": { "id": "HK47", "min": { "stars": 7, "relic": 7 } } },
+          { "type": "unit", "unit": { "id": "BASTILASHAN", "min": { "stars": 7, "relic": 7 } } },
+          { "type": "unit", "unit": { "id": "SITHASSASSIN", "min": { "stars": 7, "relic": 5 } } },
+          { "type": "unit", "unit": { "id": "50RT", "min": { "stars": 7, "relic": 5 } } },
+          { "type": "unit", "unit": { "id": "FURYCLASSINTERCEPTOR", "min": { "stars": 7 } } },
+          { "type": "unit", "unit": { "id": "SITHSUPREMACYCLASS", "min": { "stars": 7 } } },
+          { "type": "unit", "unit": { "id": "TIEDAGGER", "min": { "stars": 7 } } },
+          { "type": "unit", "unit": { "id": "SITHBOMBER", "min": { "stars": 7 } } },
+          { "type": "unit", "unit": { "id": "SITHINFILTRATOR", "min": { "stars": 7 } } },
+          { "type": "unit", "unit": { "id": "SITHFIGHTER", "min": { "stars": 7 } } },
+          { "type": "unit", "unit": { "id": "EBONHAWK", "min": { "stars": 7 } } }
+        ]
+      }
+    },
+    {
+      "id": "GLHONDO",
+      "name": "Pirate King Hondo Ohnaka",
+      "kind": "galactic_legend",
+      "requirement": {
+        "type": "all",
+        "items": [
+          { "type": "unit", "unit": { "id": "ITHANO", "min": { "stars": 7, "relic": 3 } } },
+          { "type": "unit", "unit": { "id": "HONDO", "min": { "stars": 7, "relic": 9 } } },
+          {
+            "type": "unit",
+            "unit": { "id": "SMUGGLERCHEWBACCA", "min": { "stars": 7, "relic": 7 } }
+          },
+          { "type": "unit", "unit": { "id": "EZRABRIDGERS3", "min": { "stars": 7, "relic": 6 } } },
+          { "type": "unit", "unit": { "id": "QUIGGOLD", "min": { "stars": 7, "relic": 5 } } },
+          { "type": "unit", "unit": { "id": "KIX", "min": { "stars": 7, "relic": 6 } } },
+          {
+            "type": "unit",
+            "unit": { "id": "GENERALSKYWALKER", "min": { "stars": 7, "relic": 9 } }
+          },
+          { "type": "unit", "unit": { "id": "REY", "min": { "stars": 7, "relic": 8 } } },
+          { "type": "unit", "unit": { "id": "BRUTUS", "min": { "stars": 7, "relic": 7 } } },
+          { "type": "unit", "unit": { "id": "VANE", "min": { "stars": 7, "relic": 7 } } },
+          { "type": "unit", "unit": { "id": "GENERALKENOBI", "min": { "stars": 7, "relic": 9 } } },
+          { "type": "unit", "unit": { "id": "CHIRRUTIMWE", "min": { "stars": 7, "relic": 5 } } },
+          {
+            "type": "unit",
+            "unit": { "id": "CAPTAINSILVO", "min": { "stars": 7, "relic": 7 } }
+          },
+          { "type": "unit", "unit": { "id": "COUNTDOOKU", "min": { "stars": 7, "relic": 8 } } },
+          { "type": "unit", "unit": { "id": "BOSSK", "min": { "stars": 7, "relic": 8 } } },
+          {
+            "type": "unit",
+            "unit": { "id": "MILLENNIUMFALCONEP7", "min": { "stars": 7 } }
+          }
+        ]
+      }
+    },
+    {
+      "id": "GLAHSOKATANO",
+      "name": "Ahsoka Tano",
+      "kind": "galactic_legend",
+      "requirement": {
+        "type": "all",
+        "items": [
+          { "type": "unit", "unit": { "id": "AHSOKATANO", "min": { "stars": 7, "relic": 9 } } },
+          {
+            "type": "unit",
+            "unit": { "id": "GENERALSKYWALKER", "min": { "stars": 7, "relic": 8 } }
+          },
+          { "type": "unit", "unit": { "id": "ASAJVENTRESS", "min": { "stars": 7, "relic": 5 } } },
+          {
+            "type": "unit",
+            "unit": { "id": "NIGHTTROOPER", "min": { "stars": 7, "relic": 7 } }
+          },
+          {
+            "type": "unit",
+            "unit": { "id": "COMMANDERAHSOKA", "min": { "stars": 7, "relic": 9 } }
+          },
+          { "type": "unit", "unit": { "id": "CAPTAINENOCH", "min": { "stars": 7, "relic": 7 } } },
+          {
+            "type": "unit",
+            "unit": { "id": "DEATHTROOPERPERIDEA", "min": { "stars": 7, "relic": 7 } }
+          },
+          { "type": "unit", "unit": { "id": "EZRABRIDGERS3", "min": { "stars": 7, "relic": 5 } } },
+          {
+            "type": "unit",
+            "unit": { "id": "FULCRUMAHSOKA", "min": { "stars": 7, "relic": 9 } }
+          },
+          { "type": "unit", "unit": { "id": "CT7567", "min": { "stars": 7, "relic": 7 } } },
+          { "type": "unit", "unit": { "id": "BARRISSOFFEE", "min": { "stars": 7, "relic": 5 } } },
+          {
+            "type": "unit",
+            "unit": { "id": "PADAWANSABINE", "min": { "stars": 7, "relic": 7 } }
+          },
+          {
+            "type": "unit",
+            "unit": { "id": "GENERALSYNDULLA", "min": { "stars": 7, "relic": 5 } }
+          },
+          { "type": "unit", "unit": { "id": "PLOKOON", "min": { "stars": 7, "relic": 8 } } },
+          { "type": "unit", "unit": { "id": "HUYANG", "min": { "stars": 7, "relic": 7 } } },
+          {
+            "type": "unit",
+            "unit": { "id": "JEDISTARFIGHTERAHSOKATANO", "min": { "stars": 7 } }
+          }
+        ]
+      }
+    },
+    {
+      "id": "GLLEIA",
+      "name": "Leia Organa",
+      "kind": "galactic_legend",
+      "requirement": {
+        "type": "all",
+        "items": [
+          { "type": "unit", "unit": { "id": "CAPTAINREX", "min": { "stars": 7, "relic": 7 } } },
+          {
+            "type": "unit",
+            "unit": { "id": "PRINCESSKNEESAA", "min": { "stars": 7, "relic": 7 } }
+          },
+          { "type": "unit", "unit": { "id": "CAPTAINDROGAN", "min": { "stars": 7, "relic": 7 } } },
+          {
+            "type": "unit",
+            "unit": { "id": "SCOUTTROOPER_V3", "min": { "stars": 7, "relic": 7 } }
+          },
+          {
+            "type": "unit",
+            "unit": { "id": "R2D2_LEGENDARY", "min": { "stars": 7, "relic": 8 } }
+          },
+          { "type": "unit", "unit": { "id": "ADMIRALRADDUS", "min": { "stars": 7, "relic": 8 } } },
+          { "type": "unit", "unit": { "id": "MONMOTHMA", "min": { "stars": 7, "relic": 5 } } },
+          { "type": "unit", "unit": { "id": "BOUSHH", "min": { "stars": 7, "relic": 5 } } },
+          { "type": "unit", "unit": { "id": "WICKET", "min": { "stars": 7, "relic": 3 } } },
+          { "type": "unit", "unit": { "id": "EWOKELDER", "min": { "stars": 7, "relic": 3 } } }
+        ]
+      }
+    },
+    {
+      "id": "JABBATHEHUTT",
+      "name": "Jabba the Hutt",
+      "kind": "galactic_legend",
+      "requirement": {
+        "type": "all",
+        "items": [
+          { "type": "unit", "unit": { "id": "JEDIKNIGHTLUKE", "min": { "stars": 7, "relic": 7 } } },
+          { "type": "unit", "unit": { "id": "BOUSHH", "min": { "stars": 7, "relic": 7 } } },
+          {
+            "type": "unit",
+            "unit": { "id": "UNDERCOVERLANDO", "min": { "stars": 7, "relic": 7 } }
+          },
+          { "type": "unit", "unit": { "id": "KRRSANTAN", "min": { "stars": 7, "relic": 7 } } },
+          { "type": "unit", "unit": { "id": "BOBAFETT", "min": { "stars": 7, "relic": 8 } } },
+          { "type": "unit", "unit": { "id": "HANSOLO", "min": { "stars": 7, "relic": 8 } } },
+          { "type": "unit", "unit": { "id": "C3POLEGENDARY", "min": { "stars": 7, "relic": 7 } } },
+          { "type": "unit", "unit": { "id": "GREEDO", "min": { "stars": 7, "relic": 6 } } },
+          { "type": "unit", "unit": { "id": "UGNAUGHT", "min": { "stars": 7, "relic": 5 } } },
+          { "type": "unit", "unit": { "id": "EMBO", "min": { "stars": 7, "relic": 5 } } },
+          { "type": "unit", "unit": { "id": "AURRA_SING", "min": { "stars": 7, "relic": 3 } } },
+          { "type": "unit", "unit": { "id": "JAWA", "min": { "stars": 7, "relic": 3 } } }
+        ]
+      }
+    },
+    {
+      "id": "LORDVADER",
+      "name": "Lord Vader",
+      "kind": "galactic_legend",
+      "requirement": {
+        "type": "all",
+        "items": [
+          {
+            "type": "unit",
+            "unit": { "id": "GENERALSKYWALKER", "min": { "stars": 7, "relic": 8 } }
+          },
+          { "type": "unit", "unit": { "id": "PADMEAMIDALA", "min": { "stars": 7, "relic": 8 } } },
+          { "type": "unit", "unit": { "id": "ADMIRALPIETT", "min": { "stars": 7, "relic": 8 } } },
+          {
+            "type": "unit",
+            "unit": { "id": "ARCTROOPER501ST", "min": { "stars": 7, "relic": 8 } }
+          },
+          { "type": "unit", "unit": { "id": "BADBATCHECHO", "min": { "stars": 7, "relic": 7 } } },
+          { "type": "unit", "unit": { "id": "BADBATCHTECH", "min": { "stars": 7, "relic": 7 } } },
+          { "type": "unit", "unit": { "id": "VADER", "min": { "stars": 7, "relic": 7 } } },
+          {
+            "type": "unit",
+            "unit": { "id": "EMPERORPALPATINE", "min": { "stars": 7, "relic": 7 } }
+          },
+          { "type": "unit", "unit": { "id": "COUNTDOOKU", "min": { "stars": 7, "relic": 6 } } },
+          {
+            "type": "unit",
+            "unit": { "id": "BADBATCHHUNTER", "min": { "stars": 7, "relic": 5 } }
+          },
+          { "type": "unit", "unit": { "id": "NUTEGUNRAY", "min": { "stars": 7, "relic": 5 } } },
+          {
+            "type": "unit",
+            "unit": { "id": "TUSKENRAIDER", "min": { "stars": 7, "relic": 5 } }
+          },
+          { "type": "unit", "unit": { "id": "ZAMWESELL", "min": { "stars": 7, "relic": 5 } } }
+        ]
+      }
+    },
+    {
+      "id": "JEDIMASTERKENOBI",
+      "name": "Jedi Master Kenobi",
+      "kind": "galactic_legend",
+      "requirement": {
+        "type": "all",
+        "items": [
+          { "type": "unit", "unit": { "id": "GENERALKENOBI", "min": { "stars": 7, "relic": 8 } } },
+          {
+            "type": "unit",
+            "unit": { "id": "GRANDMASTERYODA", "min": { "stars": 7, "relic": 8 } }
+          },
+          { "type": "unit", "unit": { "id": "WATTAMBOR", "min": { "stars": 7, "relic": 7 } } },
+          { "type": "unit", "unit": { "id": "QUIGONJINN", "min": { "stars": 7, "relic": 7 } } },
+          { "type": "unit", "unit": { "id": "SHAAKTI", "min": { "stars": 7, "relic": 7 } } },
+          { "type": "unit", "unit": { "id": "GRIEVOUS", "min": { "stars": 7, "relic": 7 } } },
+          { "type": "unit", "unit": { "id": "AHSOKATANO", "min": { "stars": 7, "relic": 5 } } },
+          { "type": "unit", "unit": { "id": "BOKATAN", "min": { "stars": 7, "relic": 5 } } },
+          { "type": "unit", "unit": { "id": "CADBANE", "min": { "stars": 7, "relic": 5 } } },
+          {
+            "type": "unit",
+            "unit": { "id": "CLONESERGEANTPHASEI", "min": { "stars": 7, "relic": 5 } }
+          },
+          { "type": "unit", "unit": { "id": "MACEWINDU", "min": { "stars": 7, "relic": 3 } } },
+          { "type": "unit", "unit": { "id": "CAPITALNEGOTIATOR", "min": { "stars": 5 } } }
+        ]
+      }
+    },
+    {
+      "id": "GRANDMASTERLUKE",
+      "name": "Jedi Master Luke Skywalker",
+      "kind": "galactic_legend",
+      "requirement": {
+        "type": "all",
+        "items": [
+          { "type": "unit", "unit": { "id": "JEDIKNIGHTLUKE", "min": { "stars": 7, "relic": 7 } } },
+          { "type": "unit", "unit": { "id": "MONMOTHMA", "min": { "stars": 7, "relic": 5 } } },
+          { "type": "unit", "unit": { "id": "C3POCHEWBACCA", "min": { "stars": 7, "relic": 5 } } },
+          {
+            "type": "unit",
+            "unit": { "id": "C3POLEGENDARY", "min": { "stars": 7, "relic": 5 } }
+          },
+          {
+            "type": "unit",
+            "unit": { "id": "CHEWBACCALEGENDARY", "min": { "stars": 7, "relic": 6 } }
+          },
+          { "type": "unit", "unit": { "id": "HANSOLO", "min": { "stars": 7, "relic": 6 } } },
+          { "type": "unit", "unit": { "id": "WAMPA", "min": { "stars": 7, "relic": 3 } } },
+          {
+            "type": "unit",
+            "unit": { "id": "ADMINISTRATORLANDO", "min": { "stars": 7, "relic": 3 } }
+          },
+          { "type": "unit", "unit": { "id": "HOTHLEIA", "min": { "stars": 7, "relic": 3 } } },
+          { "type": "unit", "unit": { "id": "HOTHHAN", "min": { "stars": 7, "relic": 3 } } },
+          { "type": "unit", "unit": { "id": "VADER", "min": { "stars": 7, "relic": 3 } } },
+          { "type": "unit", "unit": { "id": "HOTHREBELSCOUT", "min": { "stars": 7, "relic": 3 } } },
+          { "type": "unit", "unit": { "id": "YWINGREBEL", "min": { "stars": 5 } } }
+        ]
+      }
+    },
+    {
+      "id": "SITHPALPATINE",
+      "name": "Sith Eternal Emperor",
+      "kind": "galactic_legend",
+      "requirement": {
+        "type": "all",
+        "items": [
+          {
+            "type": "unit",
+            "unit": { "id": "EMPERORPALPATINE", "min": { "stars": 7, "relic": 7 } }
+          },
+          { "type": "unit", "unit": { "id": "VADER", "min": { "stars": 7, "relic": 7 } } },
+          { "type": "unit", "unit": { "id": "ADMIRALPIETT", "min": { "stars": 7, "relic": 8 } } },
+          { "type": "unit", "unit": { "id": "DARTHSIDIOUS", "min": { "stars": 7, "relic": 7 } } },
+          { "type": "unit", "unit": { "id": "MAUL", "min": { "stars": 7, "relic": 7 } } },
+          { "type": "unit", "unit": { "id": "COUNTDOOKU", "min": { "stars": 7, "relic": 6 } } },
+          {
+            "type": "unit",
+            "unit": { "id": "DIRECTORKRENNIC", "min": { "stars": 7, "relic": 4 } }
+          },
+          { "type": "unit", "unit": { "id": "SITHMARAUDER", "min": { "stars": 7, "relic": 3 } } },
+          { "type": "unit", "unit": { "id": "ROYALGUARD", "min": { "stars": 7, "relic": 3 } } },
+          {
+            "type": "unit",
+            "unit": { "id": "GRANDMOFFTARKIN", "min": { "stars": 7, "relic": 3 } }
+          },
+          {
+            "type": "unit",
+            "unit": { "id": "COLONELSTARCK", "min": { "stars": 7, "relic": 3 } }
+          }
+        ]
+      }
+    },
+    {
+      "id": "SUPREMELEADERKYLOREN",
+      "name": "Supreme Leader Kylo Ren",
+      "kind": "galactic_legend",
+      "requirement": {
+        "type": "all",
+        "items": [
+          {
+            "type": "unit",
+            "unit": { "id": "KYLORENUNMASKED", "min": { "stars": 7, "relic": 7 } }
+          },
+          { "type": "unit", "unit": { "id": "KYLOREN", "min": { "stars": 7, "relic": 7 } } },
+          { "type": "unit", "unit": { "id": "GENERALHUX", "min": { "stars": 7, "relic": 5 } } },
+          { "type": "unit", "unit": { "id": "FOSITHTROOPER", "min": { "stars": 7, "relic": 5 } } },
+          { "type": "unit", "unit": { "id": "PHASMA", "min": { "stars": 7, "relic": 5 } } },
+          {
+            "type": "unit",
+            "unit": { "id": "FIRSTORDERTROOPER", "min": { "stars": 7, "relic": 5 } }
+          },
+          {
+            "type": "unit",
+            "unit": { "id": "FIRSTORDEREXECUTIONER", "min": { "stars": 7, "relic": 5 } }
+          },
+          {
+            "type": "unit",
+            "unit": { "id": "FIRSTORDERTIEPILOT", "min": { "stars": 7, "relic": 3 } }
+          },
+          {
+            "type": "unit",
+            "unit": { "id": "FIRSTORDERSPECIALFORCESPILOT", "min": { "stars": 7, "relic": 3 } }
+          },
+          {
+            "type": "unit",
+            "unit": { "id": "FIRSTORDEROFFICERMALE", "min": { "stars": 7, "relic": 3 } }
+          },
+          { "type": "unit", "unit": { "id": "SMUGGLERHAN", "min": { "stars": 7, "relic": 3 } } },
+          {
+            "type": "unit",
+            "unit": { "id": "SMUGGLERCHEWBACCA", "min": { "stars": 7, "relic": 3 } }
+          },
+          { "type": "unit", "unit": { "id": "CAPITALFINALIZER", "min": { "stars": 5 } } }
+        ]
+      }
+    },
+    {
+      "id": "GLREY",
+      "name": "Rey",
+      "kind": "galactic_legend",
+      "requirement": {
+        "type": "all",
+        "items": [
+          {
+            "type": "unit",
+            "unit": { "id": "REYJEDITRAINING", "min": { "stars": 7, "relic": 7 } }
+          },
+          { "type": "unit", "unit": { "id": "BB8", "min": { "stars": 7, "relic": 7 } } },
+          { "type": "unit", "unit": { "id": "REY", "min": { "stars": 7, "relic": 7 } } },
+          { "type": "unit", "unit": { "id": "FINN", "min": { "stars": 7, "relic": 5 } } },
+          { "type": "unit", "unit": { "id": "POE", "min": { "stars": 7, "relic": 5 } } },
+          { "type": "unit", "unit": { "id": "EPIXFINN", "min": { "stars": 7, "relic": 5 } } },
+          { "type": "unit", "unit": { "id": "EPIXPOE", "min": { "stars": 7, "relic": 5 } } },
+          { "type": "unit", "unit": { "id": "AMILYNHOLDO", "min": { "stars": 7, "relic": 5 } } },
+          { "type": "unit", "unit": { "id": "ROSETICO", "min": { "stars": 7, "relic": 5 } } },
+          {
+            "type": "unit",
+            "unit": { "id": "RESISTANCETROOPER", "min": { "stars": 7, "relic": 3 } }
+          },
+          {
+            "type": "unit",
+            "unit": { "id": "RESISTANCEPILOT", "min": { "stars": 7, "relic": 3 } }
+          },
+          { "type": "unit", "unit": { "id": "SMUGGLERHAN", "min": { "stars": 7, "relic": 3 } } },
+          {
+            "type": "unit",
+            "unit": { "id": "SMUGGLERCHEWBACCA", "min": { "stars": 7, "relic": 3 } }
+          },
+          { "type": "unit", "unit": { "id": "CAPITALRADDUS", "min": { "stars": 5 } } }
+        ]
+      }
+    }
+  ]
+}

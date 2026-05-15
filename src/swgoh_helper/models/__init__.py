@@ -101,13 +101,30 @@ from .stats import StatDefinition
 # Kyrotech
 from .kyrotech import CharacterKyrotechResult
 
-# Galactic Legend Pathing
-from .galactic_legend import (
-    GLRequirement,
-    GLPathDefinition,
-    GLRequirementProgress,
-    GLPathScore,
-    GLPathReport,
+# Journey Guide Pathing
+from .journey_guide import (
+    AllExprV2,
+    AnyExprV2,
+    AtLeastExprV2,
+    JourneyGuideCatalogV2,
+    JourneyGuideDefaultsV2,
+    JourneyGuideSchemaV2,
+    JourneyRequirement,
+    JourneyPathDefinition,
+    JourneyRequirementProgress,
+    JourneyPathScore,
+    JourneyPathReport,
+    JourneyTargetV2,
+    MinSpecV2,
+    NoneExprV2,
+    RefExprV2,
+    RequirementExprV2,
+    ScoringHintsV2,
+    SelectorExprV2,
+    SelectorRuleV2,
+    UnitExprV2,
+    UnitFilterV2,
+    UnitRuleV2,
 )
 
 __all__ = [
@@ -190,10 +207,28 @@ __all__ = [
     "StatDefinition",
     # Kyrotech
     "CharacterKyrotechResult",
-    # Galactic Legend Pathing
-    "GLRequirement",
-    "GLPathDefinition",
-    "GLRequirementProgress",
-    "GLPathScore",
-    "GLPathReport",
+    # Journey Guide Pathing
+    "JourneyRequirement",
+    "JourneyPathDefinition",
+    "JourneyRequirementProgress",
+    "JourneyPathScore",
+    "JourneyPathReport",
+    # Journey Guide Requirements Schema V2
+    "AllExprV2",
+    "AnyExprV2",
+    "AtLeastExprV2",
+    "JourneyGuideCatalogV2",
+    "JourneyGuideDefaultsV2",
+    "JourneyGuideSchemaV2",
+    "JourneyTargetV2",
+    "MinSpecV2",
+    "NoneExprV2",
+    "RefExprV2",
+    "RequirementExprV2",
+    "ScoringHintsV2",
+    "SelectorExprV2",
+    "SelectorRuleV2",
+    "UnitExprV2",
+    "UnitFilterV2",
+    "UnitRuleV2",
 ]

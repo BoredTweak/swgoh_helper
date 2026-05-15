@@ -15,11 +15,10 @@ from swgoh_discord.utils import (
     split_message,
 )
 
-
 DISCORD_ROTE_OUTPUT_FORMATS = tuple(
     output_format
     for output_format in VALID_ROTE_OUTPUT_FORMATS
-    if output_format != "limited"
+    if output_format not in {"limited", "planets"}
 )
 
 

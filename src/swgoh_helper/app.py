@@ -16,6 +16,7 @@ from .results_presenter import ResultsPresenter
 from .rote_coverage import (
     build_coverage_matrix,
     filter_requirements_by_phase,
+    filter_requirements_by_planet_identifiers,
     load_requirements,
     CoverageAnalyzer,
 )
@@ -24,9 +25,8 @@ from .rote_gap_analyzer import GapAnalyzer
 from .rote_bottleneck_analyzer import BottleneckAnalyzer
 from .rote_presenter import RotePresenter
 from .rote_bonus_readiness import BonusReadinessAnalyzer
-from .gl_path_advisor import GLPathAdvisor
+from .journey_guide_advisor import JourneyGuideAdvisor
 from .exceptions import AppExecutionError
-
 
 dotenv.load_dotenv()
 
@@ -259,14 +259,18 @@ class RotePlatoonApp:
         refresh: bool = False,
         output_format: str = "gaps",
         ignored_players: Optional[list[str]] = None,
+        planet_identifiers: Optional[list[str]] = None,
     ) -> str:
         """Fetch guild information and analyze platoon coverage."""
         try:
             if output_format not in VALID_ROTE_OUTPUT_FORMATS:
                 raise ValueError(
                     "Invalid --output-format. "
-                    "Expected one of: all, coverage, gaps, owners, mine"
+                    "Expected one of: all, coverage, gaps, owners, mine, planets, limited"
                 )
+
+            if planet_identifiers and len(planet_identifiers) > 3:
+                raise ValueError("Maximum of 3 planet identifiers are supported.")
 
             guild_id, guild_name, member_ally_codes = (
                 self.service.get_guild_from_ally_code(ally_code)
@@ -317,6 +321,17 @@ class RotePlatoonApp:
             else:
                 self.progress.update(
                     f"Loaded {len(requirements.requirements)} platoon requirements."
+                )
+
+            if planet_identifiers:
+                requirements = filter_requirements_by_planet_identifiers(
+                    requirements,
+                    planet_identifiers,
+                )
+                self.progress.update(
+                    "Filtered to planets "
+                    f"{', '.join(planet_identifiers)}: "
+                    f"{len(requirements.requirements)} requirements."
                 )
 
             self.progress.update("Analyzing platoon coverage...")
@@ -447,13 +462,13 @@ class RoteFarmAdvisorApp:
             raise AppExecutionError(f"Error: {e}") from e
 
 
-class GalacticLegendPathApp:
-    """Application for recommending Galactic Legend unlock paths."""
+class JourneyGuidePathApp:
+    """Application for recommending Journey Guide unlock paths."""
 
     def __init__(self, api_key: str, progress: Optional[ProgressNotifier] = None):
         self.progress = progress or ProgressNotifier()
         self.service = SwgohDataService(api_key, progress=self.progress)
-        self.advisor = GLPathAdvisor()
+        self.advisor = JourneyGuideAdvisor()
 
     def analyze_player(
         self,
@@ -462,13 +477,13 @@ class GalacticLegendPathApp:
         top_n: int = 3,
         include_unowned: bool = True,
     ) -> str:
-        """Rank GL paths for a player and return a formatted report."""
+        """Rank Journey Guide paths for a player and return a formatted report."""
         try:
             self.progress.update("Loading unit metadata...")
             units_data = self.service.get_all_units()
             self.progress.update(f"Fetching player data for ally code: {ally_code}...")
             player_data = self.service.get_player(ally_code)
-            self.progress.update("Scoring Galactic Legend paths...")
+            self.progress.update("Scoring Journey Guide paths...")
             report = self.advisor.analyze(
                 player=player_data,
                 units_data=units_data,
@@ -485,6 +500,10 @@ class GalacticLegendPathApp:
             raise AppExecutionError(f"Error: {e}") from e
 
 
+# Backward-compatible alias for callers that still import the legacy class name.
+GalacticLegendPathApp = JourneyGuidePathApp
+
+
 def print_usage():
     """Print usage information."""
     print("Usage: python app.py <command> [arguments]")
@@ -497,15 +516,19 @@ def print_usage():
         "                            --verbose: Show all matching characters (default top 10)"
     )
     print(
-        "  rote_platoon <ally_code> [--max-phase N] [--refresh] [--output-format FORMAT] [--ignore-players PLAYER1,PLAYER2,...]"
+        "  rote_platoon <ally_code> [--max-phase N] [--refresh] [--output-format FORMAT] [--planets DS#,LS#,N#] [--ignore-players PLAYER1,PLAYER2,...]"
     )
     print("                            Analyze guild for RotE platoon requirements")
     print("                            --max-phase: Limit analysis to phases up to N")
     print("                                         (e.g., 4, 3b, 5)")
     print(
-        "                            --output-format: all|coverage|gaps|owners|mine|limited"
+        "                            --output-format: all|coverage|gaps|owners|mine|planets|limited"
     )
     print("                                             (default: gaps)")
+    print(
+        "                            --planets: Optional list (max 3) of planet identifiers"
+    )
+    print("                                       (e.g., DS1,N1,LS1 or LS3B for bonus)")
     print(
         "                            --refresh:   Force fresh data from API (ignore cache)"
     )
@@ -533,21 +556,31 @@ def print_usage():
     print("                            --include-unowned: Include units you don't own")
     print()
     print(
-        "  gl_path <ally_code> [--target GL_NAME] [--top N] [--owned-only]"
+        "  journey_guide|journey-guide|gl_path|gl-path <ally_code> [--target TARGET_NAME] [--top N] [--owned-only]"
     )
-    print("                            Rank Galactic Legend unlock paths for one player")
-    print("                            --target: Limit analysis to one GL by name match")
-    print("                            --top: Number of ranked paths to show (default: 3)")
+    print("                            Rank Journey Guide unlock paths for one player")
+    print(
+        "                            --target: Limit analysis to one target by name match"
+    )
+    print(
+        "                            --top: Number of ranked paths to show (default: 3)"
+    )
     print("                            --owned-only: Deprioritize unowned units")
     print()
     print("Examples:")
     print("  python app.py kyrotech 123-456-789")
     print("  python app.py rote_platoon 123-456-789")
     print("  python app.py rote_platoon 123-456-789 --max-phase 4")
+    print(
+        "  python app.py rote_platoon 123-456-789 --output-format planets --planets DS1,N1,LS1"
+    )
+    print(
+        "  python app.py rote_platoon 123-456-789 --output-format planets --planets LS3B"
+    )
     print("  python app.py rote_platoon 123-456-789 --refresh")
     print("  python app.py rote_farm 123-456-789 --max-phase 4")
-    print("  python app.py gl_path 123-456-789 --top 5")
-    print("  python app.py gl_path 123-456-789 --target \"Jedi Master Kenobi\"")
+    print("  python app.py journey-guide 123-456-789 --top 5")
+    print('  python app.py journey-guide 123-456-789 --target "Jedi Master Kenobi"')
 
 
 def run_kyrotech():
@@ -567,12 +600,17 @@ def run_kyrotech():
         print("Please create a .env file with your API key")
         sys.exit(1)
 
-    ally_code = sys.argv[1]
+    try:
+        ally_code, options_start = _parse_ally_code_arg(sys.argv)
+    except ValueError as e:
+        print(f"Error: {e}")
+        sys.exit(1)
+
     faction = None
     include_unowned = "--include-unowned" in sys.argv
     verbose = "--verbose" in sys.argv
 
-    for i, arg in enumerate(sys.argv[2:], start=2):
+    for i, arg in enumerate(sys.argv[options_start:], start=options_start):
         if arg == "--faction" and i + 1 < len(sys.argv):
             faction = sys.argv[i + 1]
             break
@@ -592,12 +630,38 @@ def run_kyrotech():
         sys.exit(1)
 
 
+def _parse_ally_code_arg(argv: list[str]) -> tuple[str, int]:
+    """Parse ally code from positional or --ally-code/-a option formats."""
+    if len(argv) < 2:
+        raise ValueError("Missing ally code.")
+
+    first = argv[1]
+    if first in {"--ally-code", "-a"}:
+        if len(argv) < 3 or argv[2].startswith("--"):
+            raise ValueError("--ally-code requires a value.")
+        return argv[2], 3
+
+    if first.startswith("--ally-code="):
+        value = first.split("=", 1)[1].strip()
+        if not value:
+            raise ValueError("--ally-code requires a value.")
+        return value, 2
+
+    if first.startswith("-"):
+        raise ValueError(
+            "Missing ally code. Use positional <ally_code> or --ally-code <ally_code>."
+        )
+
+    return first, 2
+
+
 def _parse_rote_platoon_args(start_index: int) -> dict[str, object]:
     """Parse rote-platoon options."""
     max_phase = None
     refresh = False
     output_format_arg = None
     ignored_players: list[str] = []
+    planet_identifiers: list[str] = []
 
     i = start_index
     while i < len(sys.argv):
@@ -638,6 +702,23 @@ def _parse_rote_platoon_args(start_index: int) -> dict[str, object]:
                 print(f"Ignoring players: {', '.join(ignored_players)}")
             continue
 
+        if arg == "--planets":
+            i += 1
+            planet_chunks: list[str] = []
+            while i < len(sys.argv) and not sys.argv[i].startswith("--"):
+                planet_chunks.append(sys.argv[i])
+                i += 1
+
+            planet_text = " ".join(planet_chunks)
+            planet_identifiers = [
+                p.strip().upper()
+                for p in planet_text.replace(";", ",").replace(" ", ",").split(",")
+                if p.strip()
+            ]
+            if len(planet_identifiers) > 3:
+                raise ValueError("--planets accepts at most 3 identifiers.")
+            continue
+
         i += 1
 
     output_format = output_format_arg or "gaps"
@@ -647,6 +728,7 @@ def _parse_rote_platoon_args(start_index: int) -> dict[str, object]:
         "refresh": refresh,
         "output_format": output_format,
         "ignored_players": ignored_players,
+        "planet_identifiers": planet_identifiers,
     }
 
 
@@ -663,9 +745,14 @@ def run_rote_platoon():
         print("Please create a .env file with your API key")
         sys.exit(1)
 
-    ally_code = sys.argv[1]
     try:
-        options = _parse_rote_platoon_args(start_index=2)
+        ally_code, options_start = _parse_ally_code_arg(sys.argv)
+    except ValueError as e:
+        print(f"Error: {e}")
+        sys.exit(1)
+
+    try:
+        options = _parse_rote_platoon_args(start_index=options_start)
     except ValueError as e:
         print(f"Error: {e}")
         sys.exit(1)
@@ -678,6 +765,7 @@ def run_rote_platoon():
             refresh=options["refresh"],
             output_format=options["output_format"],
             ignored_players=options["ignored_players"],
+            planet_identifiers=options["planet_identifiers"],
         )
         print(output)
     except AppExecutionError as e:
@@ -699,9 +787,14 @@ def run_rote_limited():
         print("Please create a .env file with your API key")
         sys.exit(1)
 
-    ally_code = sys.argv[1]
     try:
-        options = _parse_rote_platoon_args(start_index=2)
+        ally_code, options_start = _parse_ally_code_arg(sys.argv)
+    except ValueError as e:
+        print(f"Error: {e}")
+        sys.exit(1)
+
+    try:
+        options = _parse_rote_platoon_args(start_index=options_start)
     except ValueError as e:
         print(f"Error: {e}")
         sys.exit(1)
@@ -714,6 +807,7 @@ def run_rote_limited():
             refresh=options["refresh"],
             output_format="limited",
             ignored_players=options["ignored_players"],
+            planet_identifiers=options["planet_identifiers"],
         )
         print(output)
     except AppExecutionError as e:
@@ -742,12 +836,17 @@ def run_rote_farm():
         print("Please create a .env file with your API key")
         sys.exit(1)
 
-    ally_code = sys.argv[1]
+    try:
+        ally_code, options_start = _parse_ally_code_arg(sys.argv)
+    except ValueError as e:
+        print(f"Error: {e}")
+        sys.exit(1)
+
     max_phase = None
     max_recommendations = 15
     include_unowned = False
 
-    for i, arg in enumerate(sys.argv[2:], start=2):
+    for i, arg in enumerate(sys.argv[options_start:], start=options_start):
         if arg == "--max-phase" and i + 1 < len(sys.argv):
             max_phase = sys.argv[i + 1]
         elif arg == "--max-recommendations" and i + 1 < len(sys.argv):
@@ -770,10 +869,12 @@ def run_rote_farm():
         sys.exit(1)
 
 
-def run_gl_path():
-    """Entry point for gl-path CLI command."""
+def run_journey_guide():
+    """Entry point for journey-guide and gl-path CLI commands."""
     if len(sys.argv) < 2:
-        print("Usage: gl-path <ally_code> [--target GL_NAME] [--top N] [--owned-only]")
+        print(
+            "Usage: journey-guide <ally_code> [--target TARGET_NAME] [--top N] [--owned-only]"
+        )
         sys.exit(1)
 
     if not SWGOH_API_KEY:
@@ -801,7 +902,7 @@ def run_gl_path():
             include_unowned = False
         i += 1
 
-    app = GalacticLegendPathApp(SWGOH_API_KEY)
+    app = JourneyGuidePathApp(SWGOH_API_KEY)
     try:
         output = app.analyze_player(
             ally_code=ally_code,
@@ -832,8 +933,10 @@ def main():
         "rote-limited": run_rote_limited,
         "rote_farm": run_rote_farm,
         "rote-farm": run_rote_farm,
-        "gl_path": run_gl_path,
-        "gl-path": run_gl_path,
+        "journey_guide": run_journey_guide,
+        "journey-guide": run_journey_guide,
+        "gl_path": run_journey_guide,
+        "gl-path": run_journey_guide,
     }
 
     handler = handlers.get(command)

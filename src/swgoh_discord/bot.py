@@ -8,6 +8,7 @@ import dotenv
 from swgoh_discord.cogs.kyrotech import setup as kyrotech_setup
 from swgoh_discord.cogs.rote import setup as rote_setup
 from swgoh_discord.cogs.bonus_readiness import setup as bonus_readiness_setup
+from swgoh_discord.cogs.journey_guide import setup as journey_guide_setup
 from swgoh_discord.utils import handle_app_command_error
 
 
@@ -42,6 +43,7 @@ async def on_ready():
     await kyrotech_setup(bot, api_key)
     await rote_setup(bot, api_key)
     await bonus_readiness_setup(bot)
+    await journey_guide_setup(bot, api_key)
     _cogs_registered = True
 
     await _sync_commands()
