@@ -558,9 +558,7 @@ def print_usage():
     print(
         "  journey_guide|journey-guide|gl_path|gl-path <ally_code> [--target TARGET_NAME] [--top N] [--owned-only]"
     )
-    print(
-        "                            Rank Journey Guide unlock paths for one player"
-    )
+    print("                            Rank Journey Guide unlock paths for one player")
     print(
         "                            --target: Limit analysis to one target by name match"
     )

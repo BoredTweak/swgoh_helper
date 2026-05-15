@@ -96,7 +96,9 @@ class JourneyGuideAdvisor:
             "=" * 72,
         ]
         if not report.ranked_paths:
-            lines.append("No paths available. Check your Journey Guide requirements data.")
+            lines.append(
+                "No paths available. Check your Journey Guide requirements data."
+            )
             return "\n".join(lines)
 
         for idx, path in enumerate(report.ranked_paths, 1):
