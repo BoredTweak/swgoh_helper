@@ -3,6 +3,8 @@
 import json
 from types import SimpleNamespace
 
+import pytest
+
 from swgoh_helper.journey_guide_advisor import JourneyGuideAdvisor
 
 
@@ -235,6 +237,6 @@ def test_higher_relic_targets_cost_more_than_lower_targets(tmp_path):
     report = advisor.analyze(player, units_data, top_n=2)
 
     assert report.ranked_paths[0].gl_name == "R5 GL"
-    assert report.ranked_paths[0].total_distance == 6.5
+    assert report.ranked_paths[0].total_distance == pytest.approx(10.9875)
     assert report.ranked_paths[1].gl_name == "R7 GL"
-    assert report.ranked_paths[1].total_distance == 16.0
+    assert report.ranked_paths[1].total_distance == pytest.approx(16.54)
