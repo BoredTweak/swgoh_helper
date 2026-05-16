@@ -29,8 +29,12 @@ def load_relic_costs(data_path: Optional[Path] = None) -> Dict[int, float]:
     """
     Load relic tier costs from the relic_costs.json data file.
 
+    Applies material_scarcity multipliers to tier costs for realistic difficulty.
+    If material_scarcity is available, computes weighted costs accounting for
+    bottleneck materials (droid_brain, gyrda_keypad, etc.).
+
     Returns:
-        Dict mapping relic tier (1-10) to its relative cost weight.
+        Dict mapping relic tier (1-10) to its relative cost weight (scarcity-adjusted).
     """
     if data_path is None:
         # Default to the data folder relative to this module
@@ -39,8 +43,34 @@ def load_relic_costs(data_path: Optional[Path] = None) -> Dict[int, float]:
     if data_path.exists():
         with open(data_path, "r") as f:
             data = json.load(f)
+            scarcity = data.get("material_scarcity", {})
+            tier_costs = data.get("tier_costs", {})
+
+            # If material_scarcity exists, compute scarcity-adjusted weights
+            if scarcity:
+                adjusted_weights = {}
+                for tier_str, costs in tier_costs.items():
+                    if not tier_str.isdigit():
+                        continue
+                    tier = int(tier_str)
+                    # Sum material costs weighted by scarcity
+                    weighted_cost = 0.0
+                    for material, amount in costs.items():
+                        if material != "credits" and material != "description":
+                            material_scarcity = scarcity.get(material, 1.0)
+                            weighted_cost += amount * material_scarcity
+                    adjusted_weights[tier] = weighted_cost
+
+                # Normalize to base tier 1 cost for interpretability
+                if adjusted_weights and adjusted_weights[1] > 0:
+                    base = adjusted_weights[1]
+                    return {
+                        tier: cost / base for tier, cost in adjusted_weights.items()
+                    }
+                return adjusted_weights
+
+            # Fallback to relative_weights if no material_scarcity layer
             weights = data.get("relative_weights", {})
-            # Convert string keys to int, skip non-numeric keys like "description"
             return {int(k): float(v) for k, v in weights.items() if k.isdigit()}
 
     # Fallback defaults if file not found

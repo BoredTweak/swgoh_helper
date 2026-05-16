@@ -92,7 +92,17 @@
       "id": "CASSIANUNDERCOVER",
       "name": "Cassian Andor (Undercover)",
       "kind": "journey_character",
-      "requirement": { "type": "all", "items": [] }
+      "requirement": {
+        "type": "all",
+        "items": [
+          { "type": "unit", "unit": { "id": "KLEYA", "min": { "stars": 7, "relic": 6 } } },
+          { "type": "unit", "unit": { "id": "VEL", "min": { "stars": 7, "relic": 6 } } },
+          { "type": "unit", "unit": { "id": "CINTA", "min": { "stars": 7, "relic": 6 } } },
+          { "type": "unit", "unit": { "id": "DEDRAMEERO", "min": { "stars": 7, "relic": 6 } } },
+          { "type": "unit", "unit": { "id": "MAJORPARTAGAZ", "min": { "stars": 7, "relic": 6 } } },
+          { "type": "unit", "unit": { "id": "KXSECURITYDROID", "min": { "stars": 7, "relic": 6 } } }
+        ]
+      }
     },
     {
       "id": "CHEWBACCALEGENDARY",

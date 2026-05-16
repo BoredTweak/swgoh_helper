@@ -3,6 +3,8 @@
 import json
 from types import SimpleNamespace
 
+import pytest
+
 from swgoh_helper.journey_guide_advisor import JourneyGuideAdvisor
 
 
@@ -209,3 +211,32 @@ def test_relic_requirement_still_costs_when_stars_are_short(tmp_path):
 
     assert report.ranked_paths[0].completed_requirements == 0
     assert report.ranked_paths[0].missing_requirements[0].distance == 2.0
+
+
+def test_higher_relic_targets_cost_more_than_lower_targets(tmp_path):
+    data = _journey_guide(
+        [
+            _entry("R5GL", "R5 GL", [_req("R5UNIT", min_relic=5)]),
+            _entry("R7GL", "R7 GL", [_req("R7UNIT", min_relic=7)]),
+        ]
+    )
+    requirements_path = tmp_path / "journey_guide_requirements.json"
+    requirements_path.write_text(json.dumps(data), encoding="utf-8")
+
+    advisor = JourneyGuideAdvisor(requirements_path=requirements_path)
+    units_data = _fake_units_response([("R5 Unit", "R5UNIT"), ("R7 Unit", "R7UNIT")])
+    player = _fake_player(
+        "Test Player",
+        123456789,
+        [
+            _fake_player_unit("R5UNIT", relic=3, gear=13, stars=7),
+            _fake_player_unit("R7UNIT", relic=5, gear=13, stars=7),
+        ],
+    )
+
+    report = advisor.analyze(player, units_data, top_n=2)
+
+    assert report.ranked_paths[0].gl_name == "R5 GL"
+    assert report.ranked_paths[0].total_distance == pytest.approx(10.9875)
+    assert report.ranked_paths[1].gl_name == "R7 GL"
+    assert report.ranked_paths[1].total_distance == pytest.approx(16.54)

@@ -1,7 +1,7 @@
 {
-  "version": "1.0",
-  "last_updated": "2026-03-26",
-  "notes": "Relic upgrade costs per tier. Materials are counted per upgrade (not cumulative).",
+  "version": "1.5",
+  "last_updated": "2026-05-16",
+  "notes": "Relic upgrade costs per tier. Materials are counted per upgrade (not cumulative). Material scarcity is based on raid token availability plus shared-energy signal-data bundle optimization with low/base/high cadence sensitivity. Corrupted signal data uses the lower-cost path between direct Mk III purchase and salvage conversion.",
   "materials": {
     "signal_data_fragmented": {"name": "Fragmented Signal Data"},
     "signal_data_incomplete": {"name": "Incomplete Signal Data"},
@@ -18,6 +18,24 @@
     "gyrda_keypad": {"name": "Gyrda Keypad"},
     "droid_brain": {"name": "Droid Brain"},
     "coaxial_servomotor": {"name": "Coaxial Servomotor"}
+  },
+  "material_scarcity": {
+    "description": "Scarcity multipliers based on token availability plus shared-energy signal-data bundle optimization. Baseline=1.0 (carbonite_circuit_board). Base scenario uses 400 daily cantina energy with weekly shop, TB, and Assault Battle injections and is stress-tested with low/base/high cadence sensitivity. Corrupted signal data uses the lower-cost source between direct Mk III purchase and salvage conversion (1 per 145 scrap).",
+    "carbonite_circuit_board": 1.0,
+    "bronzium_wiring": 1.14,
+    "chromium_transistor": 1.43,
+    "aurodium_heatsink": 1.57,
+    "signal_data_fragmented": 1.5,
+    "signal_data_incomplete": 1.486,
+    "signal_data_flawed": 1.5,
+    "signal_data_corrupted": 21.75,
+    "electrium_conductor": 3.65,
+    "zinbiddle_card": 4.86,
+    "aeromagnifier": 37.71,
+    "impulse_detector": 49.97,
+    "gyrda_keypad": 110.31,
+    "droid_brain": 110.31,
+    "coaxial_servomotor": 113.14
   },
   "tier_costs": {
     "1": {
@@ -125,16 +143,16 @@
     }
   },
   "relative_weights": {
-    "description": "Relative cost weights based on material scarcity, not credits. Key gates: Aurodium (R5), Zinbiddle (R7), Impulse/Aero (R8), Gyrda/Droid (R9)",
+    "description": "Fallback relative cost weights derived from current material_scarcity by summing weighted tier materials and normalizing to tier 1. Key gates: Zinbiddle (R7), Impulse/Aero (R8), Gyrda/Droid (R9).",
     "1": 1.0,
-    "2": 1.5,
-    "3": 2.0,
-    "4": 2.5,
-    "5": 4.0,
-    "6": 6.0,
-    "7": 10.0,
-    "8": 20.0,
-    "9": 30.0,
-    "10": 40.0
+    "2": 2.45,
+    "3": 3.91,
+    "4": 5.0,
+    "5": 5.99,
+    "6": 7.65,
+    "7": 8.89,
+    "8": 52.96,
+    "9": 161.58,
+    "10": 221.49
   }
 }
