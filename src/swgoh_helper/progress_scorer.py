@@ -33,6 +33,13 @@ class ProgressScorer:
     ) -> float:
         """Distance to reach required relic using configured weights."""
         star_gap = max(0, self.required_stars_for_relic(required_relic) - rarity)
+        if self.relic_costs is not None:
+            gear_gap = 0 if relic_tier >= 0 else max(0, 13 - gear_level)
+            return (
+                self.relic_upgrade_cost(max(relic_tier, 0), required_relic)
+                + gear_gap * self.gear_weight
+                + star_gap * self.star_weight
+            )
         if relic_tier >= required_relic:
             return star_gap * self.star_weight
         if relic_tier >= 0:

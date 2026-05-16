@@ -35,6 +35,7 @@ from .models import (
     UnitsResponse,
 )
 from .progress_scorer import ProgressScorer
+from .rote_proximity_analyzer import load_relic_costs
 
 
 def _normalize_name(name: str) -> str:
@@ -48,11 +49,13 @@ class JourneyGuideAdvisor:
     def __init__(self, requirements_path: Path | None = None):
         self.requirements_path = requirements_path or self._default_requirements_path()
         self.paths = self._load_requirements(self.requirements_path)
+        self.relic_costs = load_relic_costs()
         self.scorer = ProgressScorer(
             relic_weight=RELIC_WEIGHT,
             gear_weight=GEAR_WEIGHT,
             star_weight=STAR_WEIGHT,
             relic_star_requirements=RELIC_STAR_REQUIREMENTS,
+            relic_costs=self.relic_costs,
         )
 
     def analyze(
@@ -124,7 +127,7 @@ class JourneyGuideAdvisor:
             ):
                 lines.append(f"    {idx}. {self._format_completed_requirement(req)}")
         if not path.missing_requirements:
-            lines.append("    Unlock path: already complete")
+            lines.append("    🎉 Ready to unlock!")
             return lines
 
         lines.append("    Unlock path (lowest weight first):")
